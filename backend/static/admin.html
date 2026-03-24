@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议室管理后台 - 西安交大</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1890ff;
+            --primary-hover: #40a9ff;
+            --success: #52c41a;
+            --danger: #ff4d4f;
+            --text: #333;
+            --text-light: #666;
+            --border: #e8e8e8;
+            --bg: #f5f7fa;
+            --card: #fff;
+            --radius: 8px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px 0;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        header p {
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .toolbar h2 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        /* 房间卡片 */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .room-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s;
+        }
+
+        .room-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .room-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .campus-tag {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .campus-xingqing {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .campus-chuangxin {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .room-info {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .room-info span {
+            margin-right: 16px;
+        }
+
+        .room-equipment {
+            background: var(--bg);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 12px;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-light);
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 14px;
+            z-index: 2000;
+            transform: translateX(120%);
+            transition: transform 0.3s;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1>🏛️ 会议室管理后台</h1>
+            <p>西安交通大学 · 会议室预约系统管理</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="toolbar">
+            <h2>会议室列表</h2>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                添加会议室
+            </button>
+        </div>
+
+        <div id="roomsGrid" class="rooms-grid"></div>
+    </div>
+
+    <!-- 添加/编辑模态框 -->
+    <div id="roomModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加会议室</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="roomForm">
+                    <input type="hidden" id="roomId">
+                    <div class="form-group">
+                        <label for="roomName">会议室名称 *</label>
+                        <input type="text" id="roomName" required placeholder="例如：第一会议室">
+                    </div>
+                    <div class="form-group">
+                        <label for="campus">所属校区 *</label>
+                        <select id="campus" required>
+                            <option value="xingqing">兴庆校区</option>
+                            <option value="chuangxin">创新港校区</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="capacity">容纳人数</label>
+                        <input type="number" id="capacity" value="20" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">位置</label>
+                        <input type="text" id="location" placeholder="例如：主楼201">
+                    </div>
+                    <div class="form-group">
+                        <label for="equipment">设备说明</label>
+                        <textarea id="equipment" placeholder="例如：投影仪、白板、空调"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveRoom()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const API_BASE = '';
+        let rooms = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRooms();
+        });
+
+        // 获取会议室列表
+        async function fetchRooms() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/rooms`);
+                rooms = await res.json();
+                renderRooms();
+            } catch (err) {
+                showToast('获取数据失败', 'error');
+            }
+        }
+
+        // 渲染会议室
+        function renderRooms() {
+            const container = document.getElementById('roomsGrid');
+
+            if (rooms.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"/>
+                        </svg>
+                        <p>暂无会议室数据</p>
+                        <p style="margin-top: 8px; font-size: 13px">点击上方按钮添加第一个会议室</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = rooms.map(room => `
+                <div class="room-card">
+                    <div class="room-header">
+                        <div class="room-name">${escapeHtml(room.name)}</div>
+                        <span class="campus-tag campus-${room.campus}">
+                            ${room.campus === 'xingqing' ? '兴庆校区' : '创新港校区'}
+                        </span>
+                    </div>
+                    <div class="room-info">
+                        <span>👥 ${room.capacity} 人</span>
+                        <span>📍 ${escapeHtml(room.location || '未设置')}</span>
+                    </div>
+                    <div class="room-equipment">
+                        🛠️ ${escapeHtml(room.equipment || '暂无设备信息')}
+                    </div>
+                    <div class="room-actions">
+                        <button class="btn btn-outline btn-sm" onclick="editRoom(${room.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRoom(${room.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 打开添加模态框
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '添加会议室';
+            document.getElementById('roomForm').reset();
+            document.getElementById('roomId').value = '';
+            document.getElementById('roomModal').classList.add('active');
+        }
+
+        // 编辑会议室
+        function editRoom(id) {
+            const room = rooms.find(r => r.id === id);
+            if (!room) return;
+
+            document.getElementById('modalTitle').textContent = '编辑会议室';
+            document.getElementById('roomId').value = room.id;
+            document.getElementById('roomName').value = room.name;
+            document.getElementById('campus').value = room.campus;
+            document.getElementById('capacity').value = room.capacity;
+            document.getElementById('location').value = room.location || '';
+            document.getElementById('equipment').value = room.equipment || '';
+
+            document.getElementById('roomModal').classList.add('active');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('roomModal').classList.remove('active');
+        }
+
+        // 保存会议室
+        async function saveRoom() {
+            const id = document.getElementById('roomId').value;
+            const data = {
+                name: document.getElementById('roomName').value.trim(),
+                campus: document.getElementById('campus').value,
+                capacity: parseInt(document.getElementById('capacity').value) || 20,
+                location: document.getElementById('location').value.trim(),
+                equipment: document.getElementById('equipment').value.trim()
+            };
+
+            if (!data.name) {
+                showToast('请填写会议室名称', 'error');
+                return;
+            }
+
+            try {
+                const url = id ? `${API_BASE}/api/admin/rooms/${id}` : `${API_BASE}/api/admin/rooms`;
+                const method = id ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    showToast(id ? '修改成功' : '添加成功', 'success');
+                    closeModal();
+                    fetchRooms();
+                } else {
+                    const err = await res.json();
+                    showToast(err.detail || '操作失败', 'error');
+                }
+            } catch (err) {
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // 删除会议室
+        async function deleteRoom(id) {
+            if (!confirm('确定要删除这个会议室吗？')) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/rooms/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    showToast('删除成功', 'success');
+                    fetchRooms();
+                } else {
+                    showToast('删除失败', 'error');
+                }
+            } catch (err) {
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // Toast 提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // HTML 转义
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('roomModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeModal();
+            }
+        });
+
+        // ESC 关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,86 @@
+<!-- pages/index/index.wxml - 首页 -->
+<view class="page">
+  <!-- 校区选择 -->
+  <view class="campus-tabs">
+    <view
+      class="campus-tab {{currentCampusIndex === index ? 'active' : ''}}"
+      wx:for="{{campusList}}"
+      wx:key="code"
+      data-index="{{index}}"
+      bindtap="onCampusChange"
+    >
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 日期栏 -->
+  <view class="date-bar">
+    <view class="date-info">
+      <text class="date-display">{{dateDisplay}}</text>
+      <text class="week-day">{{weekDay}}</text>
+    </view>
+    <view bindtap="showDatePicker">
+      <van-icon name="calendar-o" size="20px" color="#1890ff" />
+    </view>
+  </view>
+
+  <!-- 日历弹窗 -->
+  <van-calendar
+    show="{{showCalendar}}"
+    type="single"
+    min-date="{{minDate}}"
+    max-date="{{maxDate}}"
+    default-date="{{defaultDate}}"
+    bind:close="onCalendarClose"
+    bind:confirm="onCalendarConfirm"
+    color="#1890ff"
+  />
+
+  <!-- 会议室列表 -->
+  <view class="rooms-container">
+    <view wx:if="{{loading}}" class="loading-state">
+      <van-loading size="24px" color="#1890ff" />
+      <text>加载中...</text>
+    </view>
+
+    <view wx:elif="{{rooms.length === 0}}" class="empty-state">
+      <van-empty description="暂无会议室" />
+    </view>
+
+    <view wx:else class="rooms-list">
+      <view
+        class="room-card"
+        wx:for="{{rooms}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onRoomTap"
+      >
+        <view class="room-header">
+          <text class="room-name">{{item.name}}</text>
+          <view class="status {{item.is_available ? 'available' : 'busy'}}">
+            <view class="status-dot {{item.is_available ? 'dot-available' : 'dot-busy'}}"></view>
+            <text>{{item.is_available ? '空闲' : '占用'}}</text>
+          </view>
+        </view>
+
+        <view class="room-info">
+          <view class="info-item">
+            <van-icon name="location-o" size="14px" color="#999" />
+            <text>{{item.location}}</text>
+          </view>
+          <view class="info-item">
+            <van-icon name="friends-o" size="14px" color="#999" />
+            <text>{{item.capacity}}人</text>
+          </view>
+        </view>
+
+        <view class="room-footer">
+          <view class="earliest-time">
+            <text>最早可预约：</text>
+            <text class="time-value">{{item.earliest_available || '今日已约满'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

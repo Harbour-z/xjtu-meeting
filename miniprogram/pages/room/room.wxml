@@ -1,0 +1,140 @@
+<!-- pages/room/room.wxml - 会议室详情 -->
+<view class="page">
+  <view wx:if="{{loading}}" class="loading-state">
+    <van-loading size="24px" color="#1890ff" />
+    <text>加载中...</text>
+  </view>
+
+  <view wx:else class="content">
+    <!-- 会议室信息 -->
+    <view class="room-info-card">
+      <view class="room-title">{{room.name}}</view>
+      <view class="room-meta">
+        <view class="meta-item">
+          <van-icon name="location-o" size="14px" color="#999" />
+          <text>{{room.location || '未设置位置'}}</text>
+        </view>
+        <view class="meta-item">
+          <van-icon name="friends-o" size="14px" color="#999" />
+          <text>{{room.capacity}}人</text>
+        </view>
+      </view>
+      <view class="room-equipment" wx:if="{{room.equipment}}">
+        <van-icon name="setting-o" size="14px" color="#999" />
+        <text>{{room.equipment}}</text>
+      </view>
+    </view>
+
+    <!-- 日期显示 -->
+    <view class="date-header">
+      <text class="date-title">{{date}}</text>
+      <view class="refresh-btn" bindtap="onRefresh">
+        <van-icon name="replay" size="16px" color="#1890ff" />
+        <text>刷新</text>
+      </view>
+    </view>
+
+    <!-- 时间线概览 -->
+    <view class="timeline-container">
+      <view class="timeline-label">今日预约情况（点击查看详情或快速选择）</view>
+      <view class="timeline-grid">
+        <view
+          class="time-slot time-slot-{{slot.status}}"
+          wx:for="{{slots}}"
+          wx:key="start_time"
+          wx:for-index="index"
+          wx:for-item="slot"
+          data-index="{{index}}"
+          bindtap="onSlotTap"
+        >
+          <text class="slot-time">{{slot.start_time}}-{{slot.end_time}}</text>
+          <view wx:if="{{slot.status !== 'available'}}" class="slot-info">
+            <text class="slot-booked-count" wx:if="{{slot.bookings.length > 0}}">{{slot.bookings.length}}个预约</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 图例 -->
+    <view class="legend">
+      <view class="legend-item">
+        <view class="legend-box available"></view>
+        <text>空闲</text>
+      </view>
+      <view class="legend-item">
+        <view class="legend-box partially_booked"></view>
+        <text>部分占用</text>
+      </view>
+      <view class="legend-item">
+        <view class="legend-box fully_booked"></view>
+        <text>已约满</text>
+      </view>
+    </view>
+
+    <!-- 手动选择时间 -->
+    <view class="manual-time-section">
+      <view class="section-title">选择预约时间</view>
+      <view class="time-picker-row">
+        <view class="time-picker-item">
+          <text class="time-label">开始时间</text>
+          <picker mode="time" value="{{startTime}}" start="07:00" end="22:30" bindchange="onStartTimeChange">
+            <view class="time-picker-value">{{startTime || '请选择'}}</view>
+          </picker>
+        </view>
+        <text class="time-separator">—</text>
+        <view class="time-picker-item">
+          <text class="time-label">结束时间</text>
+          <picker mode="time" value="{{endTime}}" start="07:30" end="23:00" bindchange="onEndTimeChange">
+            <view class="time-picker-value">{{endTime || '请选择'}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="time-tips">工作时间：07:00 - 23:00</view>
+      
+      <!-- 时间冲突提示 -->
+      <view wx:if="{{timeConflict}}" class="time-conflict-warning">
+        <van-icon name="warning-o" size="16px" color="#ff4d4f" />
+        <text>{{timeConflictMsg}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="bottom-bar safe-area-bottom" wx:if="{{!loading}}">
+    <button
+      class="book-btn {{canBook ? '' : 'disabled'}}"
+      bindtap="onBookTap"
+      disabled="{{!canBook}}"
+    >
+      {{canBook ? '确认预约' : '请选择时间'}}
+    </button>
+  </view>
+</view>
+
+<!-- 时段详情弹窗 -->
+<van-popup show="{{showSlotInfo}}" position="bottom" custom-style="height: 50%; border-radius: 16px 16px 0 0;" bind:close="closeSlotInfo">
+  <view class="booking-info-popup">
+    <view class="popup-title">{{selectedSlot.start_time}} - {{selectedSlot.end_time}}</view>
+    <view class="popup-status status-{{selectedSlot.status}}">
+      <block wx:if="{{selectedSlot.status === 'available'}}">空闲可预约</block>
+      <block wx:elif="{{selectedSlot.status === 'partially_booked'}}">部分占用，最早可预约: {{selectedSlot.earliest_available}}</block>
+      <block wx:else>已约满</block>
+    </view>
+    
+    <view wx:if="{{selectedSlot.bookings && selectedSlot.bookings.length > 0}}" class="popup-bookings">
+      <view class="popup-subtitle">预约详情</view>
+      <view class="booking-item" wx:for="{{selectedSlot.bookings}}" wx:key="id">
+        <view class="booking-item-time">{{item.start_time}} - {{item.end_time}}</view>
+        <view class="booking-item-info">
+          <text class="booking-item-name">{{item.teacher_name}}</text>
+          <text class="booking-item-purpose" wx:if="{{item.purpose}}">{{item.purpose}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="popup-footer">
+      <button class="popup-close-btn" bindtap="closeSlotInfo">关闭</button>
+      <button wx:if="{{selectedSlot.status !== 'fully_booked'}}" class="popup-book-btn" bindtap="quickBook">预约此时段</button>
+    </view>
+  </view>
+</van-popup>

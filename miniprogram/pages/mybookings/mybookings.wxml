@@ -1,0 +1,83 @@
+<!-- pages/mybookings/mybookings.wxml - 我的预约 -->
+<view class="page">
+  <!-- 姓名输入 -->
+  <view wx:if="{{showNameInput}}" class="name-input-container">
+    <view class="name-input-card">
+      <view class="name-input-title">请输入您的姓名</view>
+      <view class="name-input-desc">用于查询您的预约记录</view>
+      <van-field
+        value="{{teacherName}}"
+        placeholder="请输入姓名"
+        bind:change="onNameInput"
+        border="{{false}}"
+      />
+      <button class="confirm-btn" bindtap="onNameConfirm">确认</button>
+    </view>
+  </view>
+
+  <view wx:else class="content">
+    <!-- 用户信息 -->
+    <view class="user-header">
+      <view class="user-avatar">
+        <van-icon name="user-o" size="32px" color="#1890ff" />
+      </view>
+      <view class="user-info">
+        <text class="user-name">{{teacherName}}</text>
+        <text class="user-tip">共 {{bookings.length}} 条预约记录</text>
+      </view>
+    </view>
+
+    <!-- 预约列表 -->
+    <view wx:if="{{loading}}" class="loading-state">
+      <van-loading size="24px" color="#1890ff" />
+      <text>加载中...</text>
+    </view>
+
+    <view wx:elif="{{bookings.length === 0}}" class="empty-state">
+      <van-empty description="暂无预约记录" />
+    </view>
+
+    <view wx:else class="bookings-list">
+      <view
+        class="booking-card"
+        wx:for="{{bookings}}"
+        wx:key="id"
+      >
+        <view class="booking-header">
+          <view class="booking-date">
+            <text class="date-text">{{item.date}}</text>
+          </view>
+          <view class="booking-status {{item.date < currentDate ? 'expired' : 'active'}}">
+            {{item.date < currentDate ? '已结束' : '待进行'}}
+          </view>
+        </view>
+
+        <view class="booking-body">
+          <view class="room-name">{{item.room_name}}</view>
+          <view class="booking-time">
+            <van-icon name="clock-o" size="14px" color="#999" />
+            <text>{{item.start_time}} - {{item.end_time}}</text>
+          </view>
+          <view class="booking-location" wx:if="{{item.room_location}}">
+            <van-icon name="location-o" size="14px" color="#999" />
+            <text>{{item.room_location}}</text>
+          </view>
+          <view class="booking-purpose" wx:if="{{item.purpose}}">
+            <text class="purpose-label">用途：</text>
+            <text>{{item.purpose}}</text>
+          </view>
+        </view>
+
+        <view class="booking-footer" wx:if="{{item.date >= currentDate}}">
+          <button
+            class="cancel-btn"
+            data-id="{{item.id}}"
+            catchtap="onCancelBooking"
+          >
+            取消预约
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

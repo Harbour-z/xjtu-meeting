@@ -1,0 +1,67 @@
+<!-- pages/booking/booking.wxml - 预约表单 -->
+<view class="page">
+  <!-- 预约信息卡片 -->
+  <view class="info-card">
+    <view class="info-header">
+      <van-icon name="clock-o" size="20px" color="#1890ff" />
+      <text class="info-title">预约信息</text>
+    </view>
+    <view class="info-content">
+      <view class="info-row">
+        <text class="info-label">会议室</text>
+        <text class="info-value">{{roomName}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">日期</text>
+        <text class="info-value">{{date}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">时段</text>
+        <text class="info-value time">{{startTime}} - {{endTime}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 表单 -->
+  <view class="form-card">
+    <view class="form-header">填写预约信息</view>
+
+    <van-cell-group>
+      <van-field
+        value="{{teacherName}}"
+        label="姓名"
+        required
+        placeholder="请输入您的姓名"
+        bind:change="onNameInput"
+      />
+      <van-field
+        value="{{phone}}"
+        label="电话"
+        type="tel"
+        required
+        placeholder="请输入联系电话"
+        bind:change="onPhoneInput"
+      />
+      <van-field
+        value="{{purpose}}"
+        label="用途"
+        type="textarea"
+        placeholder="请输入会议用途（选填）"
+        autosize
+        bind:change="onPurposeInput"
+      />
+    </van-cell-group>
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-container safe-area-bottom">
+    <button
+      class="submit-btn"
+      bindtap="onSubmit"
+      disabled="{{submitting}}"
+    >
+      <van-loading wx:if="{{submitting}}" size="20px" color="#fff" />
+      <text wx:else>确认预约</text>
+    </button>
+  </view>
+</view>

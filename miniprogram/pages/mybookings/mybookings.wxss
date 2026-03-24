@@ -1,0 +1,204 @@
+/* pages/mybookings/mybookings.wxss */
+
+.page {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* 姓名输入容器 */
+.name-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 32rpx;
+}
+
+.name-input-card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 48rpx 32rpx;
+  width: 100%;
+  max-width: 600rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+}
+
+.name-input-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 12rpx;
+}
+
+.name-input-desc {
+  font-size: 26rpx;
+  color: #999;
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.confirm-btn {
+  margin-top: 24rpx;
+  width: 100%;
+  height: 88rpx;
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  color: white;
+  border: none;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+/* 用户头部 */
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 40rpx 32rpx;
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+}
+
+.user-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.user-name {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: white;
+}
+
+.user-tip {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 内容 */
+.content {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 0;
+  color: #999;
+  gap: 16rpx;
+}
+
+.empty-state {
+  padding: 100rpx 0;
+}
+
+/* 预约列表 */
+.bookings-list {
+  padding: 24rpx;
+}
+
+.booking-card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: #fafafa;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.date-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.booking-status {
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.booking-status.active {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.booking-status.expired {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.booking-body {
+  padding: 24rpx;
+}
+
+.room-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.booking-time,
+.booking-location {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.booking-purpose {
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid #f0f0f0;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.purpose-label {
+  color: #999;
+}
+
+.booking-footer {
+  padding: 16rpx 24rpx;
+  border-top: 1rpx solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  padding: 12rpx 32rpx;
+  background: transparent;
+  border: 1rpx solid #ff4d4f;
+  color: #ff4d4f;
+  font-size: 26rpx;
+  border-radius: 32rpx;
+}
+
+.cancel-btn:active {
+  background: #fff2f0;
+}

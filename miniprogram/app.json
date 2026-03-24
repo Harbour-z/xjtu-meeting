@@ -1,0 +1,51 @@
+{
+    "pages": [
+        "pages/index/index",
+        "pages/room/room",
+        "pages/booking/booking",
+        "pages/mybookings/mybookings"
+    ],
+    "window": {
+        "backgroundTextStyle": "light",
+        "navigationBarBackgroundColor": "#1890ff",
+        "navigationBarTitleText": "会议室预约",
+        "navigationBarTextStyle": "white"
+    },
+    "tabBar": {
+        "color": "#999999",
+        "selectedColor": "#1890ff",
+        "backgroundColor": "#ffffff",
+        "borderStyle": "black",
+        "list": [
+            {
+                "pagePath": "pages/index/index",
+                "text": "预约",
+                "iconPath": "images/home.png",
+                "selectedIconPath": "images/home-active.png"
+            },
+            {
+                "pagePath": "pages/mybookings/mybookings",
+                "text": "我的",
+                "iconPath": "images/user.png",
+                "selectedIconPath": "images/user-active.png"
+            }
+        ]
+    },
+    "usingComponents": {
+        "van-tag": "@vant/weapp/tag/index",
+        "van-cell": "@vant/weapp/cell/index",
+        "van-cell-group": "@vant/weapp/cell-group/index",
+        "van-field": "@vant/weapp/field/index",
+        "van-button": "@vant/weapp/button/index",
+        "van-dialog": "@vant/weapp/dialog/index",
+        "van-toast": "@vant/weapp/toast/index",
+        "van-loading": "@vant/weapp/loading/index",
+        "van-calendar": "@vant/weapp/calendar/index",
+        "van-popup": "@vant/weapp/popup/index",
+        "van-picker": "@vant/weapp/picker/index",
+        "van-empty": "@vant/weapp/empty/index",
+        "van-icon": "@vant/weapp/icon/index"
+    },
+    "sitemapLocation": "sitemap.json",
+    "style": "v2"
+}
