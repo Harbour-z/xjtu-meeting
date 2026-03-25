@@ -49,9 +49,10 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "2.25.0",
-  "appid": "wxa5b4ca6db75f015d",
+  "libVersion": "3.15.0",
+  "appid": "wx6d73efcdaee8bf3d",
   "projectname": "xjtu-office-reserve",
+  "cloudDevEnv": "prod-3gptjz9l8a2f3d51",
   "condition": {},
   "simulatorPluginLibVersion": {},
   "editorSetting": {}

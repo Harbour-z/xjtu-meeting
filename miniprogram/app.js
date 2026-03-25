@@ -1,8 +1,8 @@
 // app.js - 小程序入口
 App({
     globalData: {
-        // 后端API地址（部署时修改为实际服务器地址）
-        apiBase: 'http://localhost:8000',
+        // 云环境ID
+        cloudEnv: 'prod-3gptjz9l8a2f3d51',
         // 当前选择的校区
         currentCampus: 'xingqing',
         // 当前选择的日期
@@ -10,6 +10,14 @@ App({
     },
 
     onLaunch() {
+        // 初始化云开发
+        if (wx.cloud) {
+            wx.cloud.init({
+                env: this.globalData.cloudEnv,
+                traceUser: true
+            })
+        }
+
         // 初始化日期为今天
         const today = new Date()
         const dateStr = this.formatDate(today)

@@ -1,9 +1,49 @@
-// utils/api.js - API 封装
+// utils/api.js - API 封装（微信云托管版本）
 const app = getApp()
 
+// 云托管配置
+const CLOUD_CONFIG = {
+    env: 'prod-3gptjz9l8a2f3d51',  // 云环境ID
+    service: 'meeting'              // 服务名称
+}
+
 /**
- * 封装请求方法
+ * 封装云托管请求方法
  */
+function request(path, method = 'GET', data = {}) {
+    return new Promise((resolve, reject) => {
+        console.log('云托管请求:', path, method, data)
+        wx.cloud.callContainer({
+            config: {
+                env: CLOUD_CONFIG.env
+            },
+            path: path,
+            method: method,
+            data: data,
+            header: {
+                'X-WX-SERVICE': CLOUD_CONFIG.service,
+                'content-type': 'application/json'
+            },
+            success(res) {
+                console.log('云托管响应:', res)
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve(res.data)
+                } else {
+                    reject(res.data || { detail: '请求失败' })
+                }
+            },
+            fail(err) {
+                console.error('云托管请求失败:', err)
+                reject({ detail: '网络错误，请检查网络连接' })
+            }
+        })
+    })
+}
+
+/* ========== 传统 HTTP 请求方式（备用） ==========
+ * 适用于：自有服务器部署、其他云平台（Railway/Render/Vercel等）
+ * 使用时：将此段代码取消注释，并注释上方的云托管 request 函数
+ *
 function request(url, method = 'GET', data = {}) {
     return new Promise((resolve, reject) => {
         wx.request({
@@ -26,6 +66,12 @@ function request(url, method = 'GET', data = {}) {
         })
     })
 }
+ *
+ * app.js 中需要配置：
+ * globalData: {
+ *     apiBase: 'https://your-domain.com'  // 你的服务器地址
+ * }
+ * =============================================== */
 
 /**
  * 获取校区列表

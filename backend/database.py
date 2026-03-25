@@ -5,7 +5,10 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # 数据库文件路径
-DB_PATH = os.path.join(os.path.dirname(__file__), "reserve.db")
+# 本地开发：使用当前目录
+# 云托管：使用环境变量 DATA_PATH 指定持久化目录
+DATA_DIR = os.environ.get("DATA_PATH", os.path.dirname(__file__))
+DB_PATH = os.path.join(DATA_DIR, "reserve.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
