@@ -1,0 +1,57 @@
+<!-- pages/bind/bind.wxml - 身份验证绑定页面 -->
+<view class="bind-page">
+  <!-- 顶部说明 -->
+  <view class="header">
+    <view class="icon-wrap">
+      <van-icon name="user-circle-o" size="80px" color="#1890ff" />
+    </view>
+    <text class="title">首次使用需验证身份</text>
+    <text class="desc">请输入您的工号和姓名进行身份验证</text>
+  </view>
+
+  <!-- 表单 -->
+  <view class="form-section">
+    <van-field
+      value="{{ employeeId }}"
+      placeholder="请输入工号"
+      label="工号"
+      type="text"
+      maxlength="20"
+      bind:change="onEmployeeIdChange"
+      border="{{ true }}"
+    />
+
+    <van-field
+      value="{{ name }}"
+      placeholder="请输入姓名"
+      label="姓名"
+      type="text"
+      maxlength="20"
+      bind:change="onNameChange"
+      border="{{ true }}"
+    />
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="btn-section">
+    <van-button
+      type="primary"
+      block
+      round
+      loading="{{ loading }}"
+      disabled="{{ !canSubmit }}"
+      bindtap="onSubmit"
+    >
+      {{ loading ? '验证中...' : '验证并绑定' }}
+    </van-button>
+  </view>
+
+  <!-- 底部说明 -->
+  <view class="footer">
+    <text class="tips">• 工号和姓名需与系统录入信息一致</text>
+    <text class="tips">• 如验证失败，请联系管理员添加信息</text>
+    <text class="tips">• 绑定后不可更改，请确认信息无误</text>
+  </view>
+
+  <van-toast id="van-toast" />
+</view>

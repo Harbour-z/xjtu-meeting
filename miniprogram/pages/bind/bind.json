@@ -1,0 +1,9 @@
+{
+    "usingComponents": {
+        "van-field": "@vant/weapp/field/index",
+        "van-button": "@vant/weapp/button/index",
+        "van-toast": "@vant/weapp/toast/index",
+        "van-loading": "@vant/weapp/loading/index"
+    },
+    "navigationBarTitleText": "身份验证"
+}

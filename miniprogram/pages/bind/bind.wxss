@@ -1,0 +1,61 @@
+/* pages/bind/bind.wxss */
+
+.bind-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 30%);
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+
+/* 顶部区域 */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0 60rpx;
+}
+
+.icon-wrap {
+  margin-bottom: 32rpx;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.desc {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* 表单区域 */
+.form-section {
+  background: #ffffff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 按钮区域 */
+.btn-section {
+  margin-top: 48rpx;
+  padding: 0 16rpx;
+}
+
+/* 底部说明 */
+.footer {
+  margin-top: 80rpx;
+  padding: 0 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.tips {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.6;
+}

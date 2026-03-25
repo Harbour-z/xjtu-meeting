@@ -86,6 +86,90 @@ class TimeSlot(BaseModel):
     teacher_name: Optional[str] = None
 
 
+# ==================== 教职工相关 ====================
+
+class TeacherBase(BaseModel):
+    """教职工基础模型"""
+    employee_id: str = Field(..., description="工号")
+    name: str = Field(..., description="姓名")
+    phone: Optional[str] = Field(None, description="联系电话")
+    department: Optional[str] = Field(None, description="部门")
+
+
+class TeacherCreate(TeacherBase):
+    """创建教职工"""
+    pass
+
+
+class TeacherUpdate(BaseModel):
+    """更新教职工"""
+    employee_id: Optional[str] = None
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class TeacherResponse(TeacherBase):
+    """教职工响应"""
+    id: int
+    is_active: bool = True
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TeacherWithBind(TeacherResponse):
+    """带绑定状态的教职工响应"""
+    is_bound: bool = Field(default=False, description="是否已绑定微信")
+    bound_at: Optional[datetime] = Field(None, description="绑定时间")
+
+
+# ==================== 认证相关 ====================
+
+class WxLoginRequest(BaseModel):
+    """微信登录请求"""
+    code: str = Field(..., description="微信登录code")
+
+
+class WxLoginResponse(BaseModel):
+    """微信登录响应"""
+    openid: str = Field(..., description="用户OpenID")
+    is_bound: bool = Field(..., description="是否已绑定")
+
+
+class BindRequest(BaseModel):
+    """绑定请求"""
+    openid: str = Field(..., description="用户OpenID")
+    employee_id: str = Field(..., description="工号")
+    name: str = Field(..., description="姓名")
+
+
+class BindResponse(BaseModel):
+    """绑定响应"""
+    success: bool
+    message: str
+    teacher_name: Optional[str] = None
+
+
+class AuthStatus(BaseModel):
+    """认证状态"""
+    is_bound: bool = Field(..., description="是否已绑定")
+    teacher_name: Optional[str] = Field(None, description="教师姓名")
+    employee_id: Optional[str] = Field(None, description="工号")
+
+
+class UserInfo(BaseModel):
+    """用户信息"""
+    openid: str
+    employee_id: str
+    name: str
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    bound_at: datetime
+
+
 # ==================== 通用响应 ====================
 
 class Message(BaseModel):

@@ -131,6 +131,33 @@ function deleteBooking(bookingId) {
     return request(`/api/bookings/${bookingId}`, 'DELETE')
 }
 
+// ==================== 认证相关 ====================
+
+/**
+ * 获取绑定状态
+ */
+function getAuthStatus(openid) {
+    return request(`/api/auth/status?openid=${openid}`)
+}
+
+/**
+ * 绑定用户
+ */
+function bindUser(openid, employeeId, name) {
+    return request('/api/auth/bind', 'POST', {
+        openid: openid,
+        employee_id: employeeId,
+        name: name
+    })
+}
+
+/**
+ * 获取用户信息
+ */
+function getUserInfo(openid) {
+    return request(`/api/auth/userinfo?openid=${openid}`)
+}
+
 module.exports = {
     request,
     getCampusList,
@@ -139,5 +166,8 @@ module.exports = {
     getRoomTimeline,
     getBookings,
     createBooking,
-    deleteBooking
+    deleteBooking,
+    getAuthStatus,
+    bindUser,
+    getUserInfo
 }

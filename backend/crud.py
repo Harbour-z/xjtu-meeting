@@ -198,3 +198,103 @@ def get_room_current_status(db: Session, room_id: int, target_date: str = None) 
     # 当前时间空闲，返回当前时间作为最早可预约时间
     # 但需要检查当前时间到下班时间之间是否有空闲
     return {"is_available": True, "earliest_available": current_time}
+
+
+# ==================== 教职工操作 ====================
+
+def get_teachers(db: Session, is_active: Optional[bool] = None) -> List[models.Teacher]:
+    """获取所有教职工"""
+    query = db.query(models.Teacher)
+    if is_active is not None:
+        query = query.filter(models.Teacher.is_active == is_active)
+    return query.order_by(models.Teacher.employee_id).all()
+
+
+def get_teacher(db: Session, teacher_id: int) -> Optional[models.Teacher]:
+    """获取单个教职工"""
+    return db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
+
+
+def get_teacher_by_employee_id(db: Session, employee_id: str) -> Optional[models.Teacher]:
+    """根据工号获取教职工"""
+    return db.query(models.Teacher).filter(models.Teacher.employee_id == employee_id).first()
+
+
+def create_teacher(db: Session, teacher: schemas.TeacherCreate) -> models.Teacher:
+    """创建教职工"""
+    db_teacher = models.Teacher(**teacher.model_dump())
+    db.add(db_teacher)
+    db.commit()
+    db.refresh(db_teacher)
+    return db_teacher
+
+
+def update_teacher(db: Session, teacher_id: int, teacher: schemas.TeacherUpdate) -> Optional[models.Teacher]:
+    """更新教职工"""
+    db_teacher = get_teacher(db, teacher_id)
+    if not db_teacher:
+        return None
+    update_data = teacher.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_teacher, key, value)
+    db.commit()
+    db.refresh(db_teacher)
+    return db_teacher
+
+
+def delete_teacher(db: Session, teacher_id: int) -> bool:
+    """删除教职工"""
+    db_teacher = get_teacher(db, teacher_id)
+    if not db_teacher:
+        return False
+    db.delete(db_teacher)
+    db.commit()
+    return True
+
+
+def verify_teacher(db: Session, employee_id: str, name: str) -> Optional[models.Teacher]:
+    """验证教职工工号和姓名"""
+    return db.query(models.Teacher).filter(
+        models.Teacher.employee_id == employee_id,
+        models.Teacher.name == name,
+        models.Teacher.is_active == True
+    ).first()
+
+
+# ==================== 用户绑定操作 ====================
+
+def get_user_bind(db: Session, openid: str) -> Optional[models.UserBind]:
+    """根据openid获取用户绑定"""
+    return db.query(models.UserBind).filter(models.UserBind.openid == openid).first()
+
+
+def get_user_bind_by_teacher(db: Session, teacher_id: int) -> Optional[models.UserBind]:
+    """根据teacher_id获取用户绑定"""
+    return db.query(models.UserBind).filter(models.UserBind.teacher_id == teacher_id).first()
+
+
+def create_user_bind(db: Session, openid: str, teacher_id: int) -> models.UserBind:
+    """创建用户绑定"""
+    db_bind = models.UserBind(openid=openid, teacher_id=teacher_id)
+    db.add(db_bind)
+    db.commit()
+    db.refresh(db_bind)
+    return db_bind
+
+
+def update_last_login(db: Session, openid: str) -> None:
+    """更新最后登录时间"""
+    db_bind = get_user_bind(db, openid)
+    if db_bind:
+        db_bind.last_login = datetime.now()
+        db.commit()
+
+
+def delete_user_bind(db: Session, openid: str) -> bool:
+    """删除用户绑定（解绑）"""
+    db_bind = get_user_bind(db, openid)
+    if not db_bind:
+        return False
+    db.delete(db_bind)
+    db.commit()
+    return True

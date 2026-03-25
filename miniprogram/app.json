@@ -3,7 +3,8 @@
         "pages/index/index",
         "pages/room/room",
         "pages/booking/booking",
-        "pages/mybookings/mybookings"
+        "pages/mybookings/mybookings",
+        "pages/bind/bind"
     ],
     "window": {
         "backgroundTextStyle": "light",

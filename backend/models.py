@@ -1,5 +1,5 @@
 """数据模型"""
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -38,3 +38,36 @@ class Booking(Base):
 
     # 关联会议室
     room = relationship("Room", back_populates="bookings")
+
+
+class Teacher(Base):
+    """教职工白名单模型"""
+    __tablename__ = "teachers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(String(20), unique=True, nullable=False, comment="工号")
+    name = Column(String(50), nullable=False, comment="姓名")
+    phone = Column(String(20), comment="联系电话")
+    department = Column(String(100), comment="部门")
+    is_active = Column(Boolean, default=True, comment="是否有效")
+    created_at = Column(DateTime, default=datetime.now)
+
+    # 关联用户绑定
+    user_bind = relationship(
+        "UserBind", back_populates="teacher", uselist=False)
+
+
+class UserBind(Base):
+    """用户绑定关系模型"""
+    __tablename__ = "user_binds"
+
+    id = Column(Integer, primary_key=True, index=True)
+    openid = Column(String(100), unique=True,
+                    nullable=False, comment="微信OpenID")
+    teacher_id = Column(Integer, ForeignKey("teachers.id"),
+                        nullable=False, comment="关联教职工ID")
+    bound_at = Column(DateTime, default=datetime.now, comment="绑定时间")
+    last_login = Column(DateTime, default=datetime.now, comment="最后登录时间")
+
+    # 关联教职工
+    teacher = relationship("Teacher", back_populates="user_bind")

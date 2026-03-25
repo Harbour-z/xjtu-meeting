@@ -17,16 +17,73 @@ Page({
         showCalendar: false,
         minDate: 0,
         maxDate: 0,
-        defaultDate: 0
+        defaultDate: 0,
+        // 用户信息
+        userName: '',
+        isBound: false
     },
 
-    onLoad() {
+    async onLoad() {
+        // 先检查绑定状态
+        await this.checkAuth()
         this.initData()
     },
 
-    onShow() {
-        // 每次显示页面时刷新数据
-        this.loadRooms()
+    async onShow() {
+        // 每次显示页面时检查绑定状态
+        const app = getApp()
+        if (app.globalData.userInfo && app.globalData.userInfo.isBound) {
+            this.setData({
+                userName: app.globalData.userInfo.name,
+                isBound: true
+            })
+            // 刷新数据
+            this.loadRooms()
+        }
+    },
+
+    // 检查用户绑定状态
+    async checkAuth() {
+        const app = getApp()
+
+        // 如果已有用户信息，直接使用
+        if (app.globalData.userInfo && app.globalData.userInfo.isBound) {
+            this.setData({
+                userName: app.globalData.userInfo.name,
+                isBound: true
+            })
+            return
+        }
+
+        // 尝试获取 openid 并检查绑定状态
+        try {
+            const openid = await app.getOpenid()
+            const result = await api.getAuthStatus(openid)
+
+            if (result.is_bound) {
+                // 已绑定
+                app.globalData.userInfo = {
+                    openid: openid,
+                    name: result.teacher_name,
+                    employeeId: result.employee_id,
+                    isBound: true
+                }
+                wx.setStorageSync('userInfo', app.globalData.userInfo)
+                this.setData({
+                    userName: result.teacher_name,
+                    isBound: true
+                })
+            } else {
+                // 未绑定，跳转到绑定页面
+                wx.redirectTo({
+                    url: `/pages/bind/bind?openid=${openid}`
+                })
+            }
+        } catch (err) {
+            console.error('检查绑定状态失败:', err)
+            // 开发模式：允许继续使用
+            // 生产模式：应该跳转到绑定页
+        }
     },
 
     onPullDownRefresh() {

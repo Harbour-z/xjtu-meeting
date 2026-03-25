@@ -299,6 +299,168 @@ def admin_delete_room(room_id: int, db: Session = Depends(get_db)):
     return {"message": "会议室已删除"}
 
 
+# ==================== 教职工管理接口 ====================
+
+@app.get("/api/admin/teachers", response_model=List[schemas.TeacherWithBind])
+def admin_get_teachers(db: Session = Depends(get_db)):
+    """管理后台：获取所有教职工"""
+    teachers = crud.get_teachers(db)
+    result = []
+    for teacher in teachers:
+        # 检查是否已绑定
+        bind = crud.get_user_bind_by_teacher(db, teacher.id)
+        result.append(schemas.TeacherWithBind(
+            id=teacher.id,
+            employee_id=teacher.employee_id,
+            name=teacher.name,
+            phone=teacher.phone,
+            department=teacher.department,
+            is_active=teacher.is_active,
+            created_at=teacher.created_at,
+            is_bound=bind is not None,
+            bound_at=bind.bound_at if bind else None
+        ))
+    return result
+
+
+@app.post("/api/admin/teachers", response_model=schemas.TeacherResponse)
+def admin_create_teacher(teacher: schemas.TeacherCreate, db: Session = Depends(get_db)):
+    """管理后台：创建教职工"""
+    # 检查工号是否已存在
+    existing = crud.get_teacher_by_employee_id(db, teacher.employee_id)
+    if existing:
+        raise HTTPException(status_code=400, detail="工号已存在")
+    return crud.create_teacher(db, teacher)
+
+
+@app.put("/api/admin/teachers/{teacher_id}", response_model=schemas.TeacherResponse)
+def admin_update_teacher(teacher_id: int, teacher: schemas.TeacherUpdate, db: Session = Depends(get_db)):
+    """管理后台：更新教职工"""
+    updated = crud.update_teacher(db, teacher_id, teacher)
+    if not updated:
+        raise HTTPException(status_code=404, detail="教职工不存在")
+    return updated
+
+
+@app.delete("/api/admin/teachers/{teacher_id}", response_model=schemas.Message)
+def admin_delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
+    """管理后台：删除教职工"""
+    # 检查是否已绑定
+    bind = crud.get_user_bind_by_teacher(db, teacher_id)
+    if bind:
+        # 同时删除绑定关系
+        crud.delete_user_bind(db, bind.openid)
+    if not crud.delete_teacher(db, teacher_id):
+        raise HTTPException(status_code=404, detail="教职工不存在")
+    return {"message": "教职工已删除"}
+
+
+@app.post("/api/admin/unbind/{teacher_id}", response_model=schemas.Message)
+def admin_unbind_teacher(teacher_id: int, db: Session = Depends(get_db)):
+    """管理后台：解绑教职工微信"""
+    bind = crud.get_user_bind_by_teacher(db, teacher_id)
+    if not bind:
+        raise HTTPException(status_code=400, detail="该教职工未绑定微信")
+
+    if not crud.delete_user_bind(db, bind.openid):
+        raise HTTPException(status_code=500, detail="解绑失败")
+    return {"message": "解绑成功"}
+
+
+# ==================== 认证接口 ====================
+
+# 微信小程序配置（云托管环境下从请求头获取）
+WX_APPID = "wx6d73efcdaee8bf3d"
+
+
+@app.get("/api/auth/status")
+def get_auth_status(
+    openid: str = Query(..., description="用户OpenID"),
+    db: Session = Depends(get_db)
+):
+    """获取用户绑定状态"""
+    bind = crud.get_user_bind(db, openid)
+    if bind:
+        return {
+            "is_bound": True,
+            "teacher_name": bind.teacher.name,
+            "employee_id": bind.teacher.employee_id
+        }
+    return {"is_bound": False, "teacher_name": None, "employee_id": None}
+
+
+@app.post("/api/auth/bind", response_model=schemas.BindResponse)
+def bind_user(bind_req: schemas.BindRequest, db: Session = Depends(get_db)):
+    """绑定用户工号和姓名"""
+    # 检查该 openid 是否已绑定
+    existing_bind = crud.get_user_bind(db, bind_req.openid)
+    if existing_bind:
+        return schemas.BindResponse(
+            success=False,
+            message="该微信已绑定其他账号",
+            teacher_name=existing_bind.teacher.name
+        )
+
+    # 验证工号和姓名
+    teacher = crud.verify_teacher(db, bind_req.employee_id, bind_req.name)
+    if not teacher:
+        return schemas.BindResponse(
+            success=False,
+            message="工号或姓名验证失败，请检查输入"
+        )
+
+    # 检查该工号是否已被其他微信绑定
+    teacher_bind = crud.get_user_bind_by_teacher(db, teacher.id)
+    if teacher_bind:
+        return schemas.BindResponse(
+            success=False,
+            message="该工号已被其他微信绑定"
+        )
+
+    # 创建绑定
+    crud.create_user_bind(db, bind_req.openid, teacher.id)
+
+    return schemas.BindResponse(
+        success=True,
+        message="绑定成功",
+        teacher_name=teacher.name
+    )
+
+
+@app.get("/api/auth/userinfo")
+def get_user_info(
+    openid: str = Query(..., description="用户OpenID"),
+    db: Session = Depends(get_db)
+):
+    """获取用户信息"""
+    bind = crud.get_user_bind(db, openid)
+    if not bind:
+        raise HTTPException(status_code=404, detail="用户未绑定")
+
+    # 更新最后登录时间
+    crud.update_last_login(db, openid)
+
+    return {
+        "openid": bind.openid,
+        "employee_id": bind.teacher.employee_id,
+        "name": bind.teacher.name,
+        "phone": bind.teacher.phone,
+        "department": bind.teacher.department,
+        "bound_at": bind.bound_at
+    }
+
+
+@app.post("/api/auth/unbind", response_model=schemas.Message)
+def unbind_user(
+    openid: str = Query(..., description="用户OpenID"),
+    db: Session = Depends(get_db)
+):
+    """解绑用户（管理员操作）"""
+    if not crud.delete_user_bind(db, openid):
+        raise HTTPException(status_code=404, detail="绑定关系不存在")
+    return {"message": "解绑成功"}
+
+
 # ==================== 静态页面 ====================
 
 @app.get("/", response_class=HTMLResponse)

@@ -16,6 +16,7 @@
             --primary: #1890ff;
             --primary-hover: #40a9ff;
             --success: #52c41a;
+            --warning: #faad14;
             --danger: #ff4d4f;
             --text: #333;
             --text-light: #666;
@@ -55,6 +56,47 @@
         header p {
             opacity: 0.9;
             margin-top: 8px;
+        }
+
+        /* 标签页导航 */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--card);
+            padding: 4px;
+            border-radius: var(--radius);
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .toolbar {
@@ -192,6 +234,71 @@
             margin-top: 16px;
             padding-top: 16px;
             border-top: 1px solid var(--border);
+        }
+
+        /* 教职工表格 */
+        .table-container {
+            background: var(--card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        td {
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-bound {
+            background: #f6ffed;
+            color: var(--success);
+        }
+
+        .status-unbound {
+            background: #fff7e6;
+            color: var(--warning);
+        }
+
+        .status-inactive {
+            background: #fff1f0;
+            color: var(--danger);
         }
 
         /* 模态框 */
@@ -342,6 +449,26 @@
         .toast.error {
             background: var(--danger);
         }
+
+        /* 搜索框 */
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
     </style>
 </head>
 
@@ -354,26 +481,67 @@
     </header>
 
     <div class="container">
-        <div class="toolbar">
-            <h2>会议室列表</h2>
-            <button class="btn btn-primary" onclick="openAddModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                添加会议室
-            </button>
+        <!-- 标签页导航 -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('rooms')">会议室管理</button>
+            <button class="tab" onclick="switchTab('teachers')">教职工管理</button>
         </div>
 
-        <div id="roomsGrid" class="rooms-grid"></div>
+        <!-- 会议室管理 -->
+        <div id="roomsTab" class="tab-content active">
+            <div class="toolbar">
+                <h2>会议室列表</h2>
+                <button class="btn btn-primary" onclick="openAddRoomModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    添加会议室
+                </button>
+            </div>
+            <div id="roomsGrid" class="rooms-grid"></div>
+        </div>
+
+        <!-- 教职工管理 -->
+        <div id="teachersTab" class="tab-content">
+            <div class="toolbar">
+                <h2>教职工白名单</h2>
+                <button class="btn btn-primary" onclick="openAddTeacherModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    添加教职工
+                </button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="teacherSearch" placeholder="搜索工号或姓名..." oninput="filterTeachers()">
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>工号</th>
+                            <th>姓名</th>
+                            <th>联系电话</th>
+                            <th>部门</th>
+                            <th>绑定状态</th>
+                            <th>绑定时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teachersTable"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- 添加/编辑模态框 -->
+    <!-- 添加/编辑会议室模态框 -->
     <div id="roomModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="modalTitle">添加会议室</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <h3 id="roomModalTitle">添加会议室</h3>
+                <button class="modal-close" onclick="closeRoomModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="roomForm">
@@ -404,8 +572,43 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-outline" onclick="closeRoomModal()">取消</button>
                 <button class="btn btn-primary" onclick="saveRoom()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑教职工模态框 -->
+    <div id="teacherModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="teacherModalTitle">添加教职工</h3>
+                <button class="modal-close" onclick="closeTeacherModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="teacherForm">
+                    <input type="hidden" id="teacherId">
+                    <div class="form-group">
+                        <label for="employeeId">工号 *</label>
+                        <input type="text" id="employeeId" required placeholder="例如：10001">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherName">姓名 *</label>
+                        <input type="text" id="teacherName" required placeholder="请输入姓名">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherPhone">联系电话</label>
+                        <input type="text" id="teacherPhone" placeholder="例如：13800138000">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherDepartment">部门</label>
+                        <input type="text" id="teacherDepartment" placeholder="例如：计算机学院">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeTeacherModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTeacher()">保存</button>
             </div>
         </div>
     </div>
@@ -416,13 +619,25 @@
     <script>
         const API_BASE = '';
         let rooms = [];
+        let teachers = [];
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             fetchRooms();
+            fetchTeachers();
         });
 
-        // 获取会议室列表
+        // 标签页切换
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`${tab}Tab`).classList.add('active');
+        }
+
+        // ==================== 会议室管理 ====================
+
         async function fetchRooms() {
             try {
                 const res = await fetch(`${API_BASE}/api/admin/rooms`);
@@ -433,7 +648,6 @@
             }
         }
 
-        // 渲染会议室
         function renderRooms() {
             const container = document.getElementById('roomsGrid');
 
@@ -473,20 +687,18 @@
             `).join('');
         }
 
-        // 打开添加模态框
-        function openAddModal() {
-            document.getElementById('modalTitle').textContent = '添加会议室';
+        function openAddRoomModal() {
+            document.getElementById('roomModalTitle').textContent = '添加会议室';
             document.getElementById('roomForm').reset();
             document.getElementById('roomId').value = '';
             document.getElementById('roomModal').classList.add('active');
         }
 
-        // 编辑会议室
         function editRoom(id) {
             const room = rooms.find(r => r.id === id);
             if (!room) return;
 
-            document.getElementById('modalTitle').textContent = '编辑会议室';
+            document.getElementById('roomModalTitle').textContent = '编辑会议室';
             document.getElementById('roomId').value = room.id;
             document.getElementById('roomName').value = room.name;
             document.getElementById('campus').value = room.campus;
@@ -497,12 +709,10 @@
             document.getElementById('roomModal').classList.add('active');
         }
 
-        // 关闭模态框
-        function closeModal() {
+        function closeRoomModal() {
             document.getElementById('roomModal').classList.remove('active');
         }
 
-        // 保存会议室
         async function saveRoom() {
             const id = document.getElementById('roomId').value;
             const data = {
@@ -530,7 +740,7 @@
 
                 if (res.ok) {
                     showToast(id ? '修改成功' : '添加成功', 'success');
-                    closeModal();
+                    closeRoomModal();
                     fetchRooms();
                 } else {
                     const err = await res.json();
@@ -541,7 +751,6 @@
             }
         }
 
-        // 删除会议室
         async function deleteRoom(id) {
             if (!confirm('确定要删除这个会议室吗？')) return;
 
@@ -561,7 +770,207 @@
             }
         }
 
-        // Toast 提示
+        // ==================== 教职工管理 ====================
+
+        async function fetchTeachers() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/teachers`);
+                teachers = await res.json();
+                renderTeachers();
+            } catch (err) {
+                showToast('获取教职工数据失败', 'error');
+            }
+        }
+
+        function renderTeachers(filteredTeachers = null) {
+            const tbody = document.getElementById('teachersTable');
+            const data = filteredTeachers || teachers;
+
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-light);">
+                            暂无教职工数据，点击上方按钮添加
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.map(teacher => `
+                <tr>
+                    <td>${escapeHtml(teacher.employee_id)}</td>
+                    <td>${escapeHtml(teacher.name)}</td>
+                    <td>${escapeHtml(teacher.phone || '-')}</td>
+                    <td>${escapeHtml(teacher.department || '-')}</td>
+                    <td>
+                        ${teacher.is_bound
+                    ? `<span class="status-badge status-bound">✓ 已绑定</span>`
+                    : `<span class="status-badge status-unbound">○ 未绑定</span>`
+                }
+                    </td>
+                    <td style="font-size: 13px; color: var(--text-light);">
+                        ${teacher.bound_at ? formatTime(teacher.bound_at) : '-'}
+                    </td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="editTeacher(${teacher.id})">编辑</button>
+                        ${teacher.is_bound
+                    ? `<button class="btn btn-outline btn-sm" style="color: var(--warning); border-color: var(--warning);" onclick="unbindTeacher(${teacher.id})">解绑</button>`
+                    : ''
+                }
+                        <button class="btn btn-danger btn-sm" onclick="deleteTeacher(${teacher.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function formatTime(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hour}:${minute}`;
+        }
+
+        function filterTeachers() {
+            const keyword = document.getElementById('teacherSearch').value.trim().toLowerCase();
+            if (!keyword) {
+                renderTeachers();
+                return;
+            }
+            const filtered = teachers.filter(t =>
+                t.employee_id.toLowerCase().includes(keyword) ||
+                t.name.toLowerCase().includes(keyword)
+            );
+            renderTeachers(filtered);
+        }
+
+        function openAddTeacherModal() {
+            document.getElementById('teacherModalTitle').textContent = '添加教职工';
+            document.getElementById('teacherForm').reset();
+            document.getElementById('teacherId').value = '';
+            document.getElementById('teacherModal').classList.add('active');
+        }
+
+        function editTeacher(id) {
+            const teacher = teachers.find(t => t.id === id);
+            if (!teacher) return;
+
+            document.getElementById('teacherModalTitle').textContent = '编辑教职工';
+            document.getElementById('teacherId').value = teacher.id;
+            document.getElementById('employeeId').value = teacher.employee_id;
+            document.getElementById('teacherName').value = teacher.name;
+            document.getElementById('teacherPhone').value = teacher.phone || '';
+            document.getElementById('teacherDepartment').value = teacher.department || '';
+
+            document.getElementById('teacherModal').classList.add('active');
+        }
+
+        function closeTeacherModal() {
+            document.getElementById('teacherModal').classList.remove('active');
+        }
+
+        async function saveTeacher() {
+            const id = document.getElementById('teacherId').value;
+            const data = {
+                employee_id: document.getElementById('employeeId').value.trim(),
+                name: document.getElementById('teacherName').value.trim(),
+                phone: document.getElementById('teacherPhone').value.trim(),
+                department: document.getElementById('teacherDepartment').value.trim()
+            };
+
+            if (!data.employee_id || !data.name) {
+                showToast('请填写工号和姓名', 'error');
+                return;
+            }
+
+            try {
+                const url = id ? `${API_BASE}/api/admin/teachers/${id}` : `${API_BASE}/api/admin/teachers`;
+                const method = id ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    showToast(id ? '修改成功' : '添加成功', 'success');
+                    closeTeacherModal();
+                    fetchTeachers();
+                } else {
+                    const err = await res.json();
+                    showToast(err.detail || '操作失败', 'error');
+                }
+            } catch (err) {
+                showToast('网络错误', 'error');
+            }
+        }
+
+        async function deleteTeacher(id) {
+            const teacher = teachers.find(t => t.id === id);
+            const isBound = teacher && teacher.is_bound;
+
+            const message = isBound
+                ? '该教职工已绑定微信，删除后将同时解除绑定。确定要删除吗？'
+                : '确定要删除这个教职工吗？';
+
+            if (!confirm(message)) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/teachers/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    showToast('删除成功', 'success');
+                    fetchTeachers();
+                } else {
+                    showToast('删除失败', 'error');
+                }
+            } catch (err) {
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // 解绑教职工微信
+        async function unbindTeacher(id) {
+            const teacher = teachers.find(t => t.id === id);
+            if (!teacher) return;
+
+            if (!confirm(`确定要解除 ${teacher.name}（${teacher.employee_id}）的微信绑定吗？\n解绑后该用户需要重新验证身份。`)) return;
+
+            try {
+                // 先获取该教师的绑定信息
+                const res = await fetch(`${API_BASE}/api/admin/teachers`);
+                const allTeachers = await res.json();
+                const t = allTeachers.find(t => t.id === id);
+
+                if (!t || !t.is_bound) {
+                    showToast('该教职工未绑定', 'error');
+                    return;
+                }
+
+                // 调用解绑接口
+                const unbindRes = await fetch(`${API_BASE}/api/admin/unbind/${id}`, {
+                    method: 'POST'
+                });
+
+                if (unbindRes.ok) {
+                    showToast('解绑成功', 'success');
+                    fetchTeachers();
+                } else {
+                    showToast('解绑失败', 'error');
+                }
+            } catch (err) {
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // ==================== 通用功能 ====================
+
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -572,7 +981,6 @@
             }, 3000);
         }
 
-        // HTML 转义
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, '&amp;')
@@ -582,16 +990,19 @@
         }
 
         // 点击模态框外部关闭
-        document.getElementById('roomModal').addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                closeModal();
-            }
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    modal.classList.remove('active');
+                }
+            });
         });
 
         // ESC 关闭模态框
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                closeModal();
+                closeRoomModal();
+                closeTeacherModal();
             }
         });
     </script>
