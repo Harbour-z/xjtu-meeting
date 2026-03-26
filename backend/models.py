@@ -32,6 +32,7 @@ class Booking(Base):
     start_time = Column(String(5), nullable=False, comment="开始时间 HH:MM")
     end_time = Column(String(5), nullable=False, comment="结束时间 HH:MM")
     teacher_name = Column(String(50), nullable=False, comment="预约老师")
+    subject = Column(String(200), comment="会议主题")
     purpose = Column(Text, comment="预约用途")
     phone = Column(String(20), comment="联系电话")
     created_at = Column(DateTime, default=datetime.now)

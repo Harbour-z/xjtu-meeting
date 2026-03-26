@@ -53,8 +53,8 @@ class BookingBase(BaseModel):
     start_time: str = Field(..., description="开始时间 HH:MM")
     end_time: str = Field(..., description="结束时间 HH:MM")
     teacher_name: str = Field(..., description="预约老师")
+    subject: Optional[str] = Field(None, description="会议主题")
     purpose: Optional[str] = Field(None, description="预约用途")
-    phone: Optional[str] = Field(None, description="联系电话")
 
 
 class BookingCreate(BookingBase):

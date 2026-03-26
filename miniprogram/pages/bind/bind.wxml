@@ -1,56 +1,64 @@
 <!-- pages/bind/bind.wxml - 身份验证绑定页面 -->
 <view class="bind-page">
-  <!-- 顶部说明 -->
-  <view class="header">
-    <view class="icon-wrap">
-      <van-icon name="user-circle-o" size="80px" color="#1890ff" />
+  <!-- 加载状态：检查是否已绑定 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <van-loading size="32px" color="#1890ff" />
+    <text class="loading-text">正在验证身份...</text>
+  </view>
+
+  <!-- 绑定表单：未绑定的用户显示 -->
+  <view wx:else>
+    <!-- 顶部说明 -->
+    <view class="header">
+      <view class="icon-wrap">
+        <van-icon name="user-circle-o" size="80px" color="#1890ff" />
+      </view>
+      <text class="title">首次使用需验证身份</text>
+      <text class="desc">请输入您的工号和姓名进行身份验证</text>
     </view>
-    <text class="title">首次使用需验证身份</text>
-    <text class="desc">请输入您的工号和姓名进行身份验证</text>
-  </view>
 
-  <!-- 表单 -->
-  <view class="form-section">
-    <van-field
-      value="{{ employeeId }}"
-      placeholder="请输入工号"
-      label="工号"
-      type="text"
-      maxlength="20"
-      bind:change="onEmployeeIdChange"
-      border="{{ true }}"
-    />
+    <!-- 表单 -->
+    <view class="form-section">
+      <van-field
+        value="{{ employeeId }}"
+        placeholder="请输入工号"
+        label="工号"
+        type="text"
+        maxlength="20"
+        bind:change="onEmployeeIdChange"
+        border="{{ true }}"
+      />
 
-    <van-field
-      value="{{ name }}"
-      placeholder="请输入姓名"
-      label="姓名"
-      type="text"
-      maxlength="20"
-      bind:change="onNameChange"
-      border="{{ true }}"
-    />
-  </view>
+      <van-field
+        value="{{ name }}"
+        placeholder="请输入姓名"
+        label="姓名"
+        type="text"
+        maxlength="20"
+        bind:change="onNameChange"
+        border="{{ true }}"
+      />
+    </view>
 
-  <!-- 提交按钮 -->
-  <view class="btn-section">
-    <van-button
-      type="primary"
-      block
-      round
-      loading="{{ loading }}"
-      disabled="{{ !canSubmit }}"
-      bindtap="onSubmit"
-    >
-      {{ loading ? '验证中...' : '验证并绑定' }}
-    </van-button>
-  </view>
+    <!-- 提交按钮 -->
+    <view class="btn-section">
+      <van-button
+        type="primary"
+        block
+        round
+        disabled="{{ !canSubmit }}"
+        bindtap="onSubmit"
+      >
+        验证并绑定
+      </van-button>
+    </view>
 
-  <!-- 底部说明 -->
-  <view class="footer">
-    <text class="tips">• 工号和姓名需与系统录入信息一致</text>
-    <text class="tips">• 如验证失败，请联系管理员添加信息</text>
-    <text class="tips">• 绑定后不可更改，请确认信息无误</text>
+    <!-- 底部说明 -->
+    <view class="footer">
+      <text class="tips">• 工号和姓名需与系统录入信息一致</text>
+      <text class="tips">• 如验证失败，请联系管理员添加信息</text>
+      <text class="tips">• 绑定后不可更改，请确认信息无误</text>
+    </view>
   </view>
 
   <van-toast id="van-toast" />

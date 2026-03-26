@@ -104,8 +104,8 @@ Page({
             c => c.code === app.globalData.currentCampus
         )
 
-        // 计算日历的日期范围（提前7天到提前1年）
-        const minDate = today.getTime() - 7 * 24 * 60 * 60 * 1000
+        // 计算日历的日期范围（只能选择今天及以后的日期，最多提前1年）
+        const minDate = today.getTime()  // 最小日期为今天，不允许选择过去的日期
         const maxDate = today.getTime() + 365 * 24 * 60 * 60 * 1000
         const defaultDate = today.getTime()
 
@@ -126,9 +126,14 @@ Page({
         const { campusList, currentCampusIndex, currentDate } = this.data
         const campus = campusList[currentCampusIndex].code
 
+        // 获取客户端当前时间（避免服务器时间不准确）
+        const now = new Date()
+        const curDate = this.formatDateForApi(now)
+        const curTime = this.formatTimeForApi(now)
+
         try {
             this.setData({ loading: true })
-            const rooms = await api.getRooms(campus, currentDate)
+            const rooms = await api.getRooms(campus, currentDate, curDate, curTime)
 
             this.setData({
                 rooms: rooms || [],
@@ -141,6 +146,21 @@ Page({
                 icon: 'none'
             })
         }
+    },
+
+    // 格式化日期为 API 格式 YYYY-MM-DD
+    formatDateForApi(date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    },
+
+    // 格式化时间为 API 格式 HH:MM
+    formatTimeForApi(date) {
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        return `${hours}:${minutes}`
     },
 
     // 校区切换

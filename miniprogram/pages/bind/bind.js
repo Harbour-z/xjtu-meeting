@@ -7,23 +7,63 @@ Page({
         openid: '',
         employeeId: '',
         name: '',
-        loading: false,
+        loading: true,  // 初始为加载状态
         canSubmit: false
     },
 
-    onLoad(options) {
-        // 从参数获取 openid
-        if (options.openid) {
-            this.setData({ openid: options.openid })
+    async onLoad(options) {
+        // 先获取 openid
+        let openid = ''
+
+        if (options.openid && options.openid !== 'logout') {
+            openid = options.openid
         } else {
-            // 如果没有 openid，返回首页重新获取
-            wx.showToast({
-                title: '登录状态异常',
-                icon: 'none'
-            })
-            setTimeout(() => {
-                wx.redirectTo({ url: '/pages/index/index' })
-            }, 1500)
+            // 没有 openid 或退出登录，重新获取
+            try {
+                openid = await app.getOpenid()
+            } catch (err) {
+                console.error('获取 openid 失败:', err)
+                openid = 'openid_' + Date.now()
+            }
+        }
+
+        this.setData({ openid: openid })
+
+        // 关键：检查这个 openid 是否已经绑定
+        await this.checkAndAutoLogin(openid)
+    },
+
+    // 检查是否已绑定，如果已绑定则自动登录
+    async checkAndAutoLogin(openid) {
+        try {
+            const result = await api.getAuthStatus(openid)
+
+            if (result.is_bound) {
+                // 已绑定，自动恢复登录
+                app.globalData.userInfo = {
+                    openid: openid,
+                    name: result.teacher_name,
+                    employeeId: result.employee_id,
+                    isBound: true
+                }
+                wx.setStorageSync('userInfo', app.globalData.userInfo)
+
+                wx.showToast({
+                    title: '欢迎回来',
+                    icon: 'success'
+                })
+
+                // 直接跳转首页
+                setTimeout(() => {
+                    wx.switchTab({ url: '/pages/index/index' })
+                }, 1000)
+            } else {
+                // 未绑定，显示绑定表单
+                this.setData({ loading: false })
+            }
+        } catch (err) {
+            console.error('检查绑定状态失败:', err)
+            this.setData({ loading: false })
         }
     },
 
@@ -80,9 +120,9 @@ Page({
                     icon: 'success'
                 })
 
-                // 延迟跳转到首页
+                // 延迟跳转到首页（tabBar 页面需要用 switchTab）
                 setTimeout(() => {
-                    wx.redirectTo({ url: '/pages/index/index' })
+                    wx.switchTab({ url: '/pages/index/index' })
                 }, 1500)
             } else {
                 wx.showToast({
@@ -90,13 +130,13 @@ Page({
                     icon: 'none',
                     duration: 3000
                 })
+                this.setData({ loading: false })
             }
         } catch (err) {
             wx.showToast({
                 title: err.detail || '网络错误',
                 icon: 'none'
             })
-        } finally {
             this.setData({ loading: false })
         }
     }

@@ -77,14 +77,14 @@
       <view class="time-picker-row">
         <view class="time-picker-item">
           <text class="time-label">开始时间</text>
-          <picker mode="time" value="{{startTime}}" start="07:00" end="22:30" bindchange="onStartTimeChange">
+          <picker mode="multiSelector" range="{{timePickerRange}}" value="{{startTimeIndex}}" bindchange="onStartTimeChange" bindcolumnchange="onStartColumnChange">
             <view class="time-picker-value">{{startTime || '请选择'}}</view>
           </picker>
         </view>
         <text class="time-separator">—</text>
         <view class="time-picker-item">
           <text class="time-label">结束时间</text>
-          <picker mode="time" value="{{endTime}}" start="07:30" end="23:00" bindchange="onEndTimeChange">
+          <picker mode="multiSelector" range="{{timePickerRange}}" value="{{endTimeIndex}}" bindchange="onEndTimeChange" bindcolumnchange="onEndColumnChange">
             <view class="time-picker-value">{{endTime || '请选择'}}</view>
           </picker>
         </view>

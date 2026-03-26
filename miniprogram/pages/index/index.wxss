@@ -175,3 +175,15 @@
   color: #1890ff;
   font-weight: 500;
 }
+
+/* 日历组件按钮居中 */
+.van-calendar__footer {
+  display: flex;
+  justify-content: center;
+  padding: 16rpx 32rpx !important;
+}
+
+.van-calendar__confirm {
+  width: 100% !important;
+  margin: 0 !important;
+}

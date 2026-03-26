@@ -16,7 +16,9 @@
         "color": "#999999",
         "selectedColor": "#1890ff",
         "backgroundColor": "#ffffff",
-        "borderStyle": "black",
+        "borderStyle": "white",
+        "fontSize": "12px",
+        "iconWidth": "28px",
         "list": [
             {
                 "pagePath": "pages/index/index",

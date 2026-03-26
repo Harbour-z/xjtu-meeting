@@ -33,7 +33,7 @@ App({
             this.globalData.currentCampus = savedCampus
         }
 
-        // 尝试从缓存恢复用户信息
+        // 尝试从缓存恢复用户信息（缓存可能被清除）
         const savedUserInfo = wx.getStorageSync('userInfo')
         if (savedUserInfo && savedUserInfo.isBound) {
             this.globalData.userInfo = savedUserInfo
@@ -41,7 +41,8 @@ App({
         }
     },
 
-    // 获取用户 openid（从云托管请求头中获取）
+    // 获取用户 openid
+    // 优先级：缓存 > 云函数 > 后端API
     getOpenid() {
         return new Promise((resolve, reject) => {
             // 如果已有 openid，直接返回
@@ -50,30 +51,44 @@ App({
                 return
             }
 
-            // 云托管环境下，通过云函数获取 openid
-            wx.cloud.callFunction({
-                name: 'getOpenId',
-                config: {
-                    env: this.globalData.cloudEnv
-                }
-            }).then(res => {
-                if (res.result && res.result.openid) {
-                    this.globalData.openid = res.result.openid
-                    resolve(res.result.openid)
-                } else {
-                    reject(new Error('获取 openid 失败'))
-                }
-            }).catch(err => {
-                console.error('获取 openid 失败:', err)
-                // 开发环境使用模拟 openid
-                const mockOpenid = 'mock_openid_' + Date.now()
-                this.globalData.openid = mockOpenid
-                resolve(mockOpenid)
-            })
+            // 方式1：尝试从云函数获取（生产环境推荐）
+            if (wx.cloud) {
+                wx.cloud.callFunction({
+                    name: 'getOpenId',
+                    config: {
+                        env: this.globalData.cloudEnv
+                    }
+                }).then(res => {
+                    if (res.result && res.result.openid) {
+                        this.globalData.openid = res.result.openid
+                        resolve(res.result.openid)
+                        return
+                    }
+                }).catch(err => {
+                    console.warn('云函数获取 openid 失败，尝试其他方式:', err)
+                })
+            }
+
+            // 方式2：调用后端接口获取 openid（云托管环境）
+            // 云托管会在请求头中自动带上 X-WX-OPENID
+            const api = require('./utils/api')
+            api.request('/api/auth/getOpenid', 'GET')
+                .then(res => {
+                    if (res.openid) {
+                        this.globalData.openid = res.openid
+                        resolve(res.openid)
+                    } else {
+                        reject(new Error('获取 openid 失败'))
+                    }
+                })
+                .catch(err => {
+                    console.error('获取 openid 失败:', err)
+                    reject(err)
+                })
         })
     },
 
-    // 检查用户绑定状态
+    // 检查用户绑定状态（关键：用于缓存清除后恢复登录）
     async checkBindStatus() {
         try {
             const openid = await this.getOpenid()
@@ -81,17 +96,20 @@ App({
             const result = await api.getAuthStatus(openid)
 
             if (result.is_bound) {
-                // 已绑定，更新用户信息
+                // 已绑定，自动恢复用户信息
                 this.globalData.userInfo = {
                     openid: openid,
                     name: result.teacher_name,
                     employeeId: result.employee_id,
                     isBound: true
                 }
+                // 重新保存到缓存
                 wx.setStorageSync('userInfo', this.globalData.userInfo)
+                console.log('登录状态已恢复:', result.teacher_name)
                 return true
             } else {
-                // 未绑定
+                // 未绑定，需要去绑定页面
+                console.log('用户未绑定')
                 return false
             }
         } catch (err) {

@@ -82,11 +82,17 @@ function getCampusList() {
 
 /**
  * 获取会议室列表（带状态）
+ * @param {string} campus - 校区代码
+ * @param {string} date - 查询日期 YYYY-MM-DD
+ * @param {string} currentDate - 当前日期 YYYY-MM-DD（从客户端获取，避免服务器时间不准确）
+ * @param {string} currentTime - 当前时间 HH:MM（从客户端获取，避免服务器时间不准确）
  */
-function getRooms(campus, date) {
+function getRooms(campus, date, currentDate, currentTime) {
     const params = []
     if (campus) params.push(`campus=${campus}`)
     if (date) params.push(`date=${date}`)
+    if (currentDate) params.push(`current_date=${currentDate}`)
+    if (currentTime) params.push(`current_time=${currentTime}`)
     const query = params.length > 0 ? `?${params.join('&')}` : ''
     return request(`/api/rooms${query}`)
 }

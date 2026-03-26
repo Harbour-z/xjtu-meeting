@@ -27,28 +27,27 @@
     <view class="form-header">填写预约信息</view>
 
     <van-cell-group>
+      <!-- 姓名自动填充，不可编辑 -->
       <van-field
         value="{{teacherName}}"
-        label="姓名"
-        required
-        placeholder="请输入您的姓名"
-        bind:change="onNameInput"
+        label="预约人"
+        disabled
       />
       <van-field
-        value="{{phone}}"
-        label="电话"
-        type="tel"
-        required
-        placeholder="请输入联系电话"
-        bind:change="onPhoneInput"
+        value="{{subject}}"
+        label="会议主题"
+        placeholder="请输入会议主题（选填）"
+        bind:change="onSubjectInput"
+        maxlength="50"
       />
       <van-field
         value="{{purpose}}"
-        label="用途"
+        label="备注说明"
         type="textarea"
-        placeholder="请输入会议用途（选填）"
+        placeholder="请输入其他说明（选填）"
         autosize
         bind:change="onPurposeInput"
+        maxlength="200"
       />
     </van-cell-group>
   </view>

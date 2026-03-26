@@ -123,16 +123,30 @@ def get_room_bookings_for_date(db: Session, room_id: int, date_str: str) -> List
 
 # ==================== 状态计算 ====================
 
-def get_room_current_status(db: Session, room_id: int, target_date: str = None) -> dict:
+def get_room_current_status(db: Session, room_id: int, target_date: str = None,
+                            current_date: str = None, current_time: str = None) -> dict:
     """
     获取会议室当前状态
+    参数：
+    - room_id: 会议室ID
+    - target_date: 查询的日期
+    - current_date: 当前日期（前端传入，避免服务器时间不准）
+    - current_time: 当前时间（前端传入，避免服务器时间不准）
     返回: { is_available: bool, earliest_available: str }
     """
-    today_str = date.today().strftime("%Y-%m-%d")
+    # 使用前端传入的时间，如果没有则使用服务器时间（兜底）
+    if current_date:
+        today_str = current_date
+    else:
+        today_str = date.today().strftime("%Y-%m-%d")
+
     if target_date is None:
         target_date = today_str
 
-    current_time = datetime.now().strftime("%H:%M")
+    if current_time:
+        current_time = current_time
+    else:
+        current_time = datetime.now().strftime("%H:%M")
 
     # 工作时间范围
     work_start = "07:00"

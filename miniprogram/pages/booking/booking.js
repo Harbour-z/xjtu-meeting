@@ -1,5 +1,6 @@
 // pages/booking/booking.js - 预约表单
 const api = require('../../utils/api')
+const app = getApp()
 
 Page({
     data: {
@@ -10,8 +11,10 @@ Page({
         endTime: '',
         // 表单数据
         teacherName: '',
-        phone: '',
+        subject: '',
         purpose: '',
+        // 用户信息
+        userInfo: null,
         // 状态
         submitting: false
     },
@@ -25,20 +28,19 @@ Page({
             endTime: options.end_time
         })
 
-        // 尝试读取缓存的老师姓名
-        const savedName = wx.getStorageSync('teacherName')
-        if (savedName) {
-            this.setData({ teacherName: savedName })
+        // 从全局获取已登录用户信息
+        const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo')
+        if (userInfo && userInfo.name) {
+            this.setData({
+                userInfo: userInfo,
+                teacherName: userInfo.name
+            })
         }
     },
 
     // 输入处理
-    onNameInput(e) {
-        this.setData({ teacherName: e.detail })
-    },
-
-    onPhoneInput(e) {
-        this.setData({ phone: e.detail })
+    onSubjectInput(e) {
+        this.setData({ subject: e.detail })
     },
 
     onPurposeInput(e) {
@@ -47,22 +49,11 @@ Page({
 
     // 提交预约
     async onSubmit() {
-        const { roomId, date, startTime, endTime, teacherName, phone, purpose } = this.data
+        const { roomId, date, startTime, endTime, teacherName, subject, purpose } = this.data
 
         // 验证
-        if (!teacherName.trim()) {
-            wx.showToast({ title: '请输入姓名', icon: 'none' })
-            return
-        }
-
-        if (!phone.trim()) {
-            wx.showToast({ title: '请输入联系电话', icon: 'none' })
-            return
-        }
-
-        // 简单的手机号验证
-        if (!/^1[3-9]\d{9}$/.test(phone)) {
-            wx.showToast({ title: '请输入正确的手机号', icon: 'none' })
+        if (!teacherName) {
+            wx.showToast({ title: '请先登录', icon: 'none' })
             return
         }
 
@@ -74,13 +65,10 @@ Page({
                 date,
                 start_time: startTime,
                 end_time: endTime,
-                teacher_name: teacherName.trim(),
-                phone: phone.trim(),
+                teacher_name: teacherName,
+                subject: subject.trim() || null,
                 purpose: purpose.trim() || null
             })
-
-            // 缓存老师姓名
-            wx.setStorageSync('teacherName', teacherName.trim())
 
             wx.showToast({
                 title: '预约成功',

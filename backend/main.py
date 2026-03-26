@@ -1,5 +1,5 @@
 """FastAPI 主应用"""
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
@@ -9,7 +9,7 @@ from datetime import date, datetime
 import os
 
 from database import get_db, init_db, engine
-from models import Base
+from models import Base, Teacher, UserBind
 import schemas
 import crud
 
@@ -90,15 +90,18 @@ def get_rooms(
     campus: Optional[str] = Query(None, description="校区代码"),
     date_str: Optional[str] = Query(
         None, alias="date", description="日期 YYYY-MM-DD"),
+    current_date: Optional[str] = Query(None, description="当前日期（前端传入的标准时间）"),
+    current_time: Optional[str] = Query(None, description="当前时间（前端传入的标准时间）"),
     db: Session = Depends(get_db)
 ):
     """获取会议室列表（含实时状态）"""
     rooms = crud.get_rooms(db, campus)
-    target_date = date_str or date.today().strftime("%Y-%m-%d")
+    target_date = date_str or current_date or date.today().strftime("%Y-%m-%d")
 
     result = []
     for room in rooms:
-        status = crud.get_room_current_status(db, room.id, target_date)
+        status = crud.get_room_current_status(
+            db, room.id, target_date, current_date, current_time)
         result.append(schemas.RoomWithStatus(
             id=room.id,
             name=room.name,
@@ -244,6 +247,17 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
     if not room:
         raise HTTPException(status_code=404, detail="会议室不存在")
 
+    # 检查日期是否有效（不能预约过去的日期）
+    today = date.today().strftime("%Y-%m-%d")
+    if booking.date < today:
+        raise HTTPException(status_code=400, detail="不能预约过去的日期")
+
+    # 如果是今天，检查时间是否已过
+    if booking.date == today:
+        current_time = datetime.now().strftime("%H:%M")
+        if booking.start_time < current_time:
+            raise HTTPException(status_code=400, detail="不能预约已过去的时间段")
+
     # 检查时间冲突
     if crud.check_time_conflict(db, booking.room_id, booking.date,
                                 booking.start_time, booking.end_time):
@@ -367,10 +381,42 @@ def admin_unbind_teacher(teacher_id: int, db: Session = Depends(get_db)):
     return {"message": "解绑成功"}
 
 
+# ==================== 调试接口 ====================
+
+@app.get("/api/debug/db-status")
+def debug_db_status(db: Session = Depends(get_db)):
+    """调试：检查数据库状态"""
+    from database import DB_PATH
+    teachers = crud.get_teachers(db)
+    binds = db.query(UserBind).all()
+    rooms = crud.get_rooms(db)
+
+    return {
+        "db_path": DB_PATH,
+        "data_dir": os.environ.get("DATA_PATH", "未设置"),
+        "teachers_count": len(teachers),
+        "teachers": [{"id": t.id, "employee_id": t.employee_id, "name": t.name, "is_active": t.is_active} for t in teachers],
+        "binds_count": len(binds),
+        "rooms_count": len(rooms)
+    }
+
+
 # ==================== 认证接口 ====================
 
 # 微信小程序配置（云托管环境下从请求头获取）
 WX_APPID = "wx6d73efcdaee8bf3d"
+
+
+@app.get("/api/auth/getOpenid")
+def get_openid(request: Request):
+    """从云托管请求头获取用户 openid"""
+    # 云托管环境会在请求头中自动注入 X-WX-OPENID
+    openid = request.headers.get("X-WX-OPENID")
+    if openid:
+        return {"openid": openid}
+
+    # 开发环境返回模拟 openid
+    return {"openid": "dev_openid_" + str(hash(request.client.host) % 10000)}
 
 
 @app.get("/api/auth/status")
@@ -392,21 +438,38 @@ def get_auth_status(
 @app.post("/api/auth/bind", response_model=schemas.BindResponse)
 def bind_user(bind_req: schemas.BindRequest, db: Session = Depends(get_db)):
     """绑定用户工号和姓名"""
+    # 调试日志
+    print(
+        f"[BIND] 收到绑定请求: openid={bind_req.openid}, employee_id=[{bind_req.employee_id}], name=[{bind_req.name}]")
+
     # 检查该 openid 是否已绑定
     existing_bind = crud.get_user_bind(db, bind_req.openid)
     if existing_bind:
+        print(f"[BIND] openid 已绑定: {existing_bind.teacher.name}")
         return schemas.BindResponse(
             success=False,
             message="该微信已绑定其他账号",
             teacher_name=existing_bind.teacher.name
         )
 
+    # 清理输入（去除首尾空格）
+    employee_id = bind_req.employee_id.strip()
+    name = bind_req.name.strip()
+
     # 验证工号和姓名
-    teacher = crud.verify_teacher(db, bind_req.employee_id, bind_req.name)
+    teacher = crud.verify_teacher(db, employee_id, name)
     if not teacher:
+        # 调试：打印数据库中的教职工
+        all_teachers = crud.get_teachers(db)
+        print(f"[BIND] 验证失败! 数据库中的教职工:")
+        for t in all_teachers:
+            print(
+                f"  - employee_id=[{t.employee_id}], name=[{t.name}], is_active={t.is_active}")
+        print(f"[BIND] 输入: employee_id=[{employee_id}], name=[{name}]")
+
         return schemas.BindResponse(
             success=False,
-            message="工号或姓名验证失败，请检查输入"
+            message=f"工号或姓名验证失败，请检查输入（工号: {employee_id}）"
         )
 
     # 检查该工号是否已被其他微信绑定
@@ -419,6 +482,7 @@ def bind_user(bind_req: schemas.BindRequest, db: Session = Depends(get_db)):
 
     # 创建绑定
     crud.create_user_bind(db, bind_req.openid, teacher.id)
+    print(f"[BIND] 绑定成功: {teacher.name}")
 
     return schemas.BindResponse(
         success=True,
@@ -465,7 +529,7 @@ def unbind_user(
 
 @app.get("/", response_class=HTMLResponse)
 def index_page():
-    """首页 - 重定向到预约管理"""
+    """首页 - 重定向到管理后台"""
     return """
     <!DOCTYPE html>
     <html>
@@ -485,10 +549,9 @@ def index_page():
     <body>
         <div class="container">
             <h1>🏛️ 西安交大会议室预约系统</h1>
-            <p>请选择入口</p>
+            <p>西安交通大学会议室预约管理平台</p>
             <div class="links">
-                <a href="/booking">📋 预约管理（管理员）</a>
-                <a href="/admin">⚙️ 会议室管理</a>
+                <a href="/admin">📋 进入管理后台</a>
                 <a href="/docs" class="api-link">📖 API 文档</a>
             </div>
         </div>
@@ -497,19 +560,9 @@ def index_page():
     """
 
 
-@app.get("/booking", response_class=HTMLResponse)
-def booking_page():
-    """预约管理页面 - 管理员版用户界面"""
-    html_path = os.path.join(STATIC_DIR, "admin-user.html")
-    if os.path.exists(html_path):
-        with open(html_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>预约管理页面不存在</h1><p>请检查 static/admin-user.html 文件</p>"
-
-
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page():
-    """会议室管理页面"""
+    """管理后台页面 - 包含预约管理、会议室管理、教职工管理"""
     admin_html = os.path.join(STATIC_DIR, "admin.html")
     if os.path.exists(admin_html):
         with open(admin_html, "r", encoding="utf-8") as f:

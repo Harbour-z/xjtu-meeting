@@ -1,30 +1,62 @@
 <!-- pages/mybookings/mybookings.wxml - 我的预约 -->
-<view class="page">
-  <!-- 姓名输入 -->
-  <view wx:if="{{showNameInput}}" class="name-input-container">
-    <view class="name-input-card">
-      <view class="name-input-title">请输入您的姓名</view>
-      <view class="name-input-desc">用于查询您的预约记录</view>
-      <van-field
-        value="{{teacherName}}"
-        placeholder="请输入姓名"
-        bind:change="onNameInput"
-        border="{{false}}"
-      />
-      <button class="confirm-btn" bindtap="onNameConfirm">确认</button>
-    </view>
-  </view>
+<wxs module="statusUtils">
+module.exports = {
+  getStatus: function(booking, currentDate, currentTime) {
+    // 预约日期在当前日期之后 -> 待进行
+    if (booking.date > currentDate) {
+      return 'pending'
+    }
+    // 预约日期在当前日期之前 -> 已结束
+    if (booking.date < currentDate) {
+      return 'ended'
+    }
+    // 同一天，比较时间
+    if (booking.start_time > currentTime) {
+      return 'pending'
+    } else if (booking.end_time <= currentTime) {
+      return 'ended'
+    } else {
+      return 'ongoing'
+    }
+  },
+  getStatusText: function(status) {
+    if (status === 'pending') return '待进行'
+    if (status === 'ongoing') return '进行中'
+    if (status === 'ended') return '已结束'
+    return ''
+  },
+  getStatusClass: function(status) {
+    if (status === 'pending') return 'status-pending'
+    if (status === 'ongoing') return 'status-ongoing'
+    if (status === 'ended') return 'status-ended'
+    return ''
+  },
+  canCancel: function(booking, currentDate, currentTime) {
+    // 已结束的不能取消
+    if (booking.date < currentDate) return false
+    if (booking.date === currentDate && booking.end_time <= currentTime) return false
+    return true
+  }
+}
+</wxs>
 
-  <view wx:else class="content">
+<view class="page">
+  <view class="content">
     <!-- 用户信息 -->
     <view class="user-header">
       <view class="user-avatar">
         <van-icon name="user-o" size="32px" color="#1890ff" />
       </view>
       <view class="user-info">
-        <text class="user-name">{{teacherName}}</text>
-        <text class="user-tip">共 {{bookings.length}} 条预约记录</text>
+        <text class="user-name">{{userInfo.name || '未登录'}}</text>
+        <text class="user-employee-id">工号：{{userInfo.employeeId || '-'}}</text>
       </view>
+    </view>
+
+    <!-- 预约记录标题 -->
+    <view class="section-title">
+      <text>我的预约</text>
+      <text class="record-count">共 {{bookings.length}} 条记录</text>
     </view>
 
     <!-- 预约列表 -->
@@ -47,13 +79,16 @@
           <view class="booking-date">
             <text class="date-text">{{item.date}}</text>
           </view>
-          <view class="booking-status {{item.date < currentDate ? 'expired' : 'active'}}">
-            {{item.date < currentDate ? '已结束' : '待进行'}}
+          <view class="booking-status {{statusUtils.getStatusClass(statusUtils.getStatus(item, currentDate, currentTime))}}">
+            {{statusUtils.getStatusText(statusUtils.getStatus(item, currentDate, currentTime))}}
           </view>
         </view>
 
         <view class="booking-body">
           <view class="room-name">{{item.room_name}}</view>
+          <view class="booking-subject" wx:if="{{item.subject}}">
+            <text class="subject-text">{{item.subject}}</text>
+          </view>
           <view class="booking-time">
             <van-icon name="clock-o" size="14px" color="#999" />
             <text>{{item.start_time}} - {{item.end_time}}</text>
@@ -63,12 +98,12 @@
             <text>{{item.room_location}}</text>
           </view>
           <view class="booking-purpose" wx:if="{{item.purpose}}">
-            <text class="purpose-label">用途：</text>
+            <text class="purpose-label">备注：</text>
             <text>{{item.purpose}}</text>
           </view>
         </view>
 
-        <view class="booking-footer" wx:if="{{item.date >= currentDate}}">
+        <view class="booking-footer" wx:if="{{statusUtils.canCancel(item, currentDate, currentTime)}}">
           <button
             class="cancel-btn"
             data-id="{{item.id}}"
