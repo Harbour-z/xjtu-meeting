@@ -87,6 +87,7 @@ module.exports = {
         <view class="booking-body">
           <view class="room-name">{{item.room_name}}</view>
           <view class="booking-subject" wx:if="{{item.subject}}">
+            <text class="subject-label">会议主题：</text>
             <text class="subject-text">{{item.subject}}</text>
           </view>
           <view class="booking-time">

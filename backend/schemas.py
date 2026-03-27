@@ -59,7 +59,8 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     """创建预约"""
-    pass
+    client_date: Optional[str] = Field(None, description="客户端当前日期 YYYY-MM-DD")
+    client_time: Optional[str] = Field(None, description="客户端当前时间 HH:MM")
 
 
 class BookingResponse(BookingBase):

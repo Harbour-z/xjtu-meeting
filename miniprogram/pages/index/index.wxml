@@ -14,14 +14,23 @@
   </view>
 
   <!-- 日期栏 -->
-  <view class="date-bar">
-    <view class="date-info">
-      <text class="date-display">{{dateDisplay}}</text>
-      <text class="week-day">{{weekDay}}</text>
-    </view>
-    <view bindtap="showDatePicker">
-      <van-icon name="calendar-o" size="20px" color="#1890ff" />
-    </view>
+  <view class="date-section">
+    <scroll-view class="date-scroll" scroll-x enable-flex>
+      <view
+        class="date-item {{item.date === currentDate ? 'active' : ''}}"
+        wx:for="{{dateList}}"
+        wx:key="date"
+        data-date="{{item.date}}"
+        bindtap="onDateItemTap"
+      >
+        <text class="date-item-day">{{item.day}}</text>
+        <text class="date-item-week">{{item.display}}</text>
+      </view>
+      <view class="date-item date-more" bindtap="showDatePicker">
+        <van-icon name="calendar-o" size="20px" color="#1890ff" />
+        <text class="date-item-week">更多</text>
+      </view>
+    </scroll-view>
   </view>
 
   <!-- 日历弹窗 -->

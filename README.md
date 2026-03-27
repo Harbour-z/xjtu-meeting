@@ -517,7 +517,7 @@ DELETE /api/admin/rooms/{id}  # 删除会议室
 
 ## 数据库设计
 
-### 表结构
+### 表xian'z 结
 
 #### rooms 表 - 会议室
 

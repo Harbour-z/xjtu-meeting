@@ -60,6 +60,11 @@ Page({
         try {
             this.setData({ submitting: true })
 
+            // 获取客户端当前时间
+            const now = new Date()
+            const clientDate = this.formatDate(now)
+            const clientTime = this.formatTime(now)
+
             await api.createBooking({
                 room_id: parseInt(roomId),
                 date,
@@ -67,7 +72,9 @@ Page({
                 end_time: endTime,
                 teacher_name: teacherName,
                 subject: subject.trim() || null,
-                purpose: purpose.trim() || null
+                purpose: purpose.trim() || null,
+                client_date: clientDate,
+                client_time: clientTime
             })
 
             wx.showToast({
@@ -87,5 +94,20 @@ Page({
         } finally {
             this.setData({ submitting: false })
         }
+    },
+
+    // 格式化日期 YYYY-MM-DD
+    formatDate(date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    },
+
+    // 格式化时间 HH:MM
+    formatTime(date) {
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        return `${hours}:${minutes}`
     }
 })

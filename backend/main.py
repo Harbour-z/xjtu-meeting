@@ -157,32 +157,49 @@ def get_room_timeline(
             status = "available"
             earliest_available = start
         else:
-            # 计算被占用的时间
-            occupied_minutes = 0
-            for b in hour_bookings:
-                # 计算该预约在这个小时内的占用时间
-                b_start = max(b.start_time, start)
-                b_end = min(b.end_time, f"{hour+1:02d}:00")
-                # 计算分钟数
-                start_minutes = int(b_start.split(
-                    ":")[0]) * 60 + int(b_start.split(":")[1])
-                end_minutes = int(b_end.split(
-                    ":")[0]) * 60 + int(b_end.split(":")[1])
-                occupied_minutes += (end_minutes - start_minutes)
+            # 检查是否完全被占用：预约从小时开始（或更早）到小时结束（或更晚）
+            # 时间槽的实际结束时间是下一小时的开始 (hour+1):00
+            slot_actual_end = f"{hour+1:02d}:00"
 
-            if occupied_minutes >= 60:
+            # 判断是否有预约完全覆盖该时间槽
+            is_fully_covered = False
+            for b in hour_bookings:
+                # 预约开始时间 <= 时间槽开始时间，且预约结束时间 >= 时间槽实际结束时间
+                if b.start_time <= start and b.end_time >= slot_actual_end:
+                    is_fully_covered = True
+                    break
+
+            if is_fully_covered:
                 # 完全被占用
                 status = "fully_booked"
                 earliest_available = None
             else:
-                # 部分被占用
-                status = "partially_booked"
-                # 找最早空闲时间
-                earliest = start
-                for b in sorted(hour_bookings, key=lambda x: x.start_time):
-                    if b.start_time <= earliest < b.end_time:
-                        earliest = b.end_time
-                earliest_available = earliest
+                # 计算被占用的分钟数（用于判断是否部分占用）
+                occupied_minutes = 0
+                for b in hour_bookings:
+                    # 计算该预约在这个小时内的占用时间
+                    b_start = max(b.start_time, start)
+                    b_end = min(b.end_time, slot_actual_end)
+                    # 计算分钟数
+                    start_minutes = int(b_start.split(
+                        ":")[0]) * 60 + int(b_start.split(":")[1])
+                    end_minutes = int(b_end.split(
+                        ":")[0]) * 60 + int(b_end.split(":")[1])
+                    occupied_minutes += (end_minutes - start_minutes)
+
+                # 如果占用时间接近整个小时（>= 59分钟），也视为完全占用
+                if occupied_minutes >= 59:
+                    status = "fully_booked"
+                    earliest_available = None
+                else:
+                    # 部分被占用
+                    status = "partially_booked"
+                    # 找最早空闲时间
+                    earliest = start
+                    for b in sorted(hour_bookings, key=lambda x: x.start_time):
+                        if b.start_time <= earliest < b.end_time:
+                            earliest = b.end_time
+                    earliest_available = earliest
 
         slots.append({
             "start_time": start,
@@ -229,6 +246,7 @@ def get_bookings(
             start_time=booking.start_time,
             end_time=booking.end_time,
             teacher_name=booking.teacher_name,
+            subject=booking.subject,
             purpose=booking.purpose,
             phone=booking.phone,
             created_at=booking.created_at,
@@ -247,14 +265,16 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
     if not room:
         raise HTTPException(status_code=404, detail="会议室不存在")
 
+    # 优先使用客户端时间，避免服务器时间不准确
+    today = booking.client_date if booking.client_date else date.today().strftime("%Y-%m-%d")
+    current_time = booking.client_time if booking.client_time else datetime.now().strftime("%H:%M")
+
     # 检查日期是否有效（不能预约过去的日期）
-    today = date.today().strftime("%Y-%m-%d")
     if booking.date < today:
         raise HTTPException(status_code=400, detail="不能预约过去的日期")
 
     # 如果是今天，检查时间是否已过
     if booking.date == today:
-        current_time = datetime.now().strftime("%H:%M")
         if booking.start_time < current_time:
             raise HTTPException(status_code=400, detail="不能预约已过去的时间段")
 

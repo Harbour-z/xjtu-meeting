@@ -448,6 +448,20 @@
             cursor: not-allowed;
         }
 
+        .time-slot-passed {
+            background: #f5f5f5 !important;
+            border: 2px solid #d9d9d9 !important;
+            opacity: 0.6;
+        }
+
+        .time-slot-passed .slot-time {
+            color: #999;
+        }
+
+        .time-slot-passed .slot-info {
+            color: #999;
+        }
+
         .slot-time {
             font-size: 12px;
             font-weight: 500;
@@ -533,6 +547,11 @@
         .slot-detail-status.fully_booked {
             background: #fff2f0;
             color: var(--danger);
+        }
+
+        .slot-detail-status.passed {
+            background: #f5f5f5;
+            color: #999;
         }
 
         .slot-booking-item {
@@ -1052,7 +1071,7 @@
             });
 
             // 时间选择监听
-            document.getElementById('start-time').addEventListener('change', validateTime);
+            document.getElementById('start-time').addEventListener('change', onStartTimeChange);
             document.getElementById('end-time').addEventListener('change', validateTime);
         });
 
@@ -1080,7 +1099,12 @@
 
         async function loadRooms() {
             try {
-                const res = await fetch(`${API_BASE}/api/rooms?campus=${currentCampus}&date=${currentDate}`);
+                // 获取客户端当前时间，确保状态计算准确
+                const now = new Date();
+                const currentDateClient = formatDate(now);
+                const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+                const res = await fetch(`${API_BASE}/api/rooms?campus=${currentCampus}&date=${currentDate}&current_date=${currentDateClient}&current_time=${currentTime}`);
                 if (!res.ok) {
                     const errText = await res.text();
                     console.error('API 错误:', res.status, errText);
@@ -1128,13 +1152,49 @@
 
         function renderTimeline() {
             const container = document.getElementById('timeline-grid');
-            container.innerHTML = timelineSlots.map((slot, index) => `
-                <div class="time-slot time-slot-${slot.status}" data-index="${index}" onclick="showSlotDetail(${index})">
+            const now = new Date();
+            const today = formatDate(now);
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            container.innerHTML = timelineSlots.map((slot, index) => {
+                // 判断时间段是否已过去
+                const isPassed = isSlotPassed(slot.start_time, today, currentTime, currentDate);
+                const passedClass = isPassed ? 'time-slot-passed' : '';
+                return `
+                <div class="time-slot time-slot-${slot.status} ${passedClass}" data-index="${index}" onclick="showSlotDetail(${index})">
                     <span class="slot-time">${slot.start_time}</span>
                     ${slot.status !== 'available' ? `<div class="slot-info">${slot.bookings.length}个预约</div>` : ''}
                 </div>
-            `).join('');
+            `}).join('');
             validateTime();
+        }
+
+        // 判断时间段是否已过去
+        function isSlotPassed(slotStartTime, today, currentTime, selectedDate) {
+            // 如果不是今天，不会过去
+            if (selectedDate !== today) return false;
+            // 时间段的结束时间是 XX:59，所以判断整点是否过去
+            const slotEndHour = parseInt(slotStartTime.split(':')[0]) + 1;
+            const slotEndTime = `${String(slotEndHour).padStart(2, '0')}:00`;
+            return currentTime >= slotEndTime;
+        }
+
+        // 判断时间段是否正在进行中
+        function isSlotCurrent(slotStartTime, today, currentTime, selectedDate) {
+            // 如果不是今天，不在进行中
+            if (selectedDate !== today) return false;
+            // 判断当前时间是否在该时间段内
+            const slotHour = parseInt(slotStartTime.split(':')[0]);
+            const slotStart = `${String(slotHour).padStart(2, '0')}:00`;
+            const slotEnd = `${String(slotHour + 1).padStart(2, '0')}:00`;
+            return currentTime >= slotStart && currentTime < slotEnd;
+        }
+
+        // 获取当前时间的下一分钟
+        function getNextMinute() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 1);
+            return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         }
 
         function showSlotDetail(index) {
@@ -1144,15 +1204,26 @@
             const statusEl = document.getElementById('slot-detail-status');
             const bookingsEl = document.getElementById('slot-bookings');
 
-            titleEl.textContent = `${slot.start_time} - ${parseInt(slot.start_time.split(':')[0]) + 1}:00`;
-            statusEl.className = `slot-detail-status ${slot.status}`;
+            // 判断时间段是否已过去
+            const now = new Date();
+            const today = formatDate(now);
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const isPassed = isSlotPassed(slot.start_time, today, currentTime, currentDate);
 
-            if (slot.status === 'available') {
-                statusEl.textContent = '空闲可预约';
-            } else if (slot.status === 'partially_booked') {
-                statusEl.textContent = `部分占用，最早可预约: ${slot.earliest_available}`;
+            titleEl.textContent = `${slot.start_time} - ${slot.end_time}`;
+
+            if (isPassed) {
+                statusEl.className = 'slot-detail-status passed';
+                statusEl.textContent = '已过去';
             } else {
-                statusEl.textContent = '已约满';
+                statusEl.className = `slot-detail-status ${slot.status}`;
+                if (slot.status === 'available') {
+                    statusEl.textContent = '空闲可预约';
+                } else if (slot.status === 'partially_booked') {
+                    statusEl.textContent = `部分占用，最早可预约: ${slot.earliest_available}`;
+                } else {
+                    statusEl.textContent = '已约满';
+                }
             }
 
             if (slot.bookings && slot.bookings.length > 0) {
@@ -1168,10 +1239,69 @@
 
             detailEl.style.display = 'block';
 
-            if (slot.status !== 'fully_booked') {
-                document.getElementById('start-time').value = slot.earliest_available || slot.start_time;
+            // 只有未过去且未约满的时间段才能设置时间
+            if (!isPassed && slot.status !== 'fully_booked') {
+                // 如果是正在进行中的时间段，使用当前时间的下一分钟
+                const isCurrent = isSlotCurrent(slot.start_time, today, currentTime, currentDate);
+                let startTime;
+                if (isCurrent && slot.status === 'available') {
+                    startTime = getNextMinute();
+                } else {
+                    startTime = slot.earliest_available || slot.start_time;
+                }
+
+                // 计算结束时间
+                let endTime = slot.end_time;
+                if (slot.status === 'partially_booked' && slot.bookings && slot.bookings.length > 0) {
+                    // 找到第一个在 startTime 之后的预约，用它的开始时间作为结束时间
+                    const sortedBookings = [...slot.bookings].sort((a, b) => a.start_time.localeCompare(b.start_time));
+                    for (const booking of sortedBookings) {
+                        if (booking.start_time > startTime) {
+                            endTime = booking.start_time;
+                            break;
+                        }
+                    }
+                }
+
+                document.getElementById('start-time').value = startTime;
+                document.getElementById('end-time').value = endTime;
                 validateTime();
             }
+        }
+
+        // 时间加一分钟
+        function addOneMinute(timeStr) {
+            const parts = timeStr.split(':');
+            let hour = parseInt(parts[0]);
+            let minute = parseInt(parts[1]);
+
+            minute += 1;
+            if (minute >= 60) {
+                minute = 0;
+                hour += 1;
+            }
+
+            // 不超过 23:00
+            if (hour > 23 || (hour === 23 && minute > 0)) {
+                return '23:00';
+            }
+
+            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+
+        // 开始时间变化时自动调整结束时间
+        function onStartTimeChange() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+
+            if (!startTime) return;
+
+            // 如果开始时间 >= 结束时间，自动将结束时间设为开始时间+1分钟
+            if (!endTime || startTime >= endTime) {
+                document.getElementById('end-time').value = addOneMinute(startTime);
+            }
+
+            validateTime();
         }
 
         function validateTime() {

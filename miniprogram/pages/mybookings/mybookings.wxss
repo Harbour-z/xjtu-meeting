@@ -3,6 +3,10 @@
 .page {
   min-height: 100vh;
   background: #f5f7fa;
+  /* 禁止水平滚动 */
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 姓名输入容器 */
@@ -12,6 +16,8 @@
   justify-content: center;
   min-height: 80vh;
   padding: 32rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .name-input-card {
@@ -21,6 +27,7 @@
   width: 100%;
   max-width: 600rpx;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
 }
 
 .name-input-title {
@@ -57,6 +64,8 @@
   gap: 24rpx;
   padding: 40rpx 32rpx;
   background: linear-gradient(135deg, #1890ff, #40a9ff);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .user-avatar {
@@ -67,6 +76,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .user-info {
@@ -74,12 +84,16 @@
   display: flex;
   flex-direction: column;
   gap: 8rpx;
+  min-width: 0;
 }
 
 .user-name {
   font-size: 36rpx;
   font-weight: 600;
   color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-employee-id {
@@ -101,6 +115,8 @@
   font-size: 28rpx;
   font-weight: 600;
   color: #333;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .record-count {
@@ -112,6 +128,8 @@
 /* 内容 */
 .content {
   padding-bottom: env(safe-area-inset-bottom);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .loading-state {
@@ -119,18 +137,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 200rpx 0;
+  padding: 200rpx 24rpx;
   color: #999;
   gap: 16rpx;
 }
 
 .empty-state {
-  padding: 100rpx 0;
+  padding: 100rpx 24rpx;
 }
 
 /* 预约列表 */
 .bookings-list {
   padding: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .booking-card {
@@ -139,6 +159,8 @@
   margin-bottom: 20rpx;
   overflow: hidden;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .booking-header {
@@ -161,6 +183,7 @@
   border-radius: 20rpx;
   font-size: 22rpx;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .booking-status.status-pending {
@@ -191,6 +214,8 @@
 
 .booking-body {
   padding: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .room-name {
@@ -198,6 +223,9 @@
   font-weight: 600;
   color: #333;
   margin-bottom: 12rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .booking-subject {
@@ -205,12 +233,24 @@
   padding: 12rpx 16rpx;
   border-radius: 8rpx;
   margin-bottom: 12rpx;
+  display: flex;
+  align-items: flex-start;
+}
+
+.subject-label {
+  font-size: 26rpx;
+  color: #666;
+  flex-shrink: 0;
 }
 
 .subject-text {
   font-size: 28rpx;
   color: #1890ff;
   font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .booking-time,
@@ -229,6 +269,7 @@
   border-top: 1rpx solid #f0f0f0;
   font-size: 26rpx;
   color: #666;
+  word-wrap: break-word;
 }
 
 .purpose-label {

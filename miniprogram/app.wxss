@@ -21,6 +21,22 @@ page {
   color: var(--text);
   background-color: var(--bg);
   line-height: 1.5;
+
+  /* 禁止页面水平滚动 */
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 所有元素禁止超出屏幕 */
+view, text, image, scroll-view {
+  box-sizing: border-box;
+  max-width: 100vw;
+}
+
+/* 文字自动换行 */
+text {
+  word-wrap: break-word;
+  word-break: break-all;
 }
 
 /* 通用类 */

@@ -77,7 +77,9 @@ def get_booking(db: Session, booking_id: int) -> Optional[models.Booking]:
 
 def create_booking(db: Session, booking: schemas.BookingCreate) -> models.Booking:
     """创建预约"""
-    db_booking = models.Booking(**booking.model_dump())
+    # 排除非数据库字段 client_date 和 client_time
+    db_booking = models.Booking(
+        **booking.model_dump(exclude={'client_date', 'client_time'}))
     db.add(db_booking)
     db.commit()
     db.refresh(db_booking)
@@ -97,14 +99,18 @@ def delete_booking(db: Session, booking_id: int) -> bool:
 def check_time_conflict(db: Session, room_id: int, date_str: str,
                         start_time: str, end_time: str,
                         exclude_booking_id: Optional[int] = None) -> bool:
-    """检查时间冲突"""
+    """
+    检查时间冲突
+    注意：预约之间必须有1分钟缓冲时间，因此相邻预约也视为冲突
+    例如：已有预约 12:00-12:30，新预约 12:30-13:00 视为冲突
+    """
     query = db.query(models.Booking).filter(
         models.Booking.room_id == room_id,
         models.Booking.date == date_str,
         or_(
             and_(
-                models.Booking.start_time < end_time,
-                models.Booking.end_time > start_time
+                models.Booking.start_time <= end_time,
+                models.Booking.end_time >= start_time
             )
         )
     )
@@ -123,6 +129,16 @@ def get_room_bookings_for_date(db: Session, room_id: int, date_str: str) -> List
 
 # ==================== 状态计算 ====================
 
+def add_one_minute(time_str: str) -> str:
+    """时间字符串加1分钟"""
+    hours, minutes = map(int, time_str.split(':'))
+    minutes += 1
+    if minutes >= 60:
+        minutes = 0
+        hours += 1
+    return f"{hours:02d}:{minutes:02d}"
+
+
 def get_room_current_status(db: Session, room_id: int, target_date: str = None,
                             current_date: str = None, current_time: str = None) -> dict:
     """
@@ -133,6 +149,8 @@ def get_room_current_status(db: Session, room_id: int, target_date: str = None,
     - current_date: 当前日期（前端传入，避免服务器时间不准）
     - current_time: 当前时间（前端传入，避免服务器时间不准）
     返回: { is_available: bool, earliest_available: str }
+
+    注意：预约之间必须有1分钟缓冲，所以最早可预约时间需要+1分钟
     """
     # 使用前端传入的时间，如果没有则使用服务器时间（兜底）
     if current_date:
@@ -163,18 +181,23 @@ def get_room_current_status(db: Session, room_id: int, target_date: str = None,
         # 找第一个空闲时段的开始时间
         first_booking = bookings[0]
         if first_booking.start_time > work_start:
-            # 第一个预约前有空闲
+            # 第一个预约前有空闲（需要考虑缓冲：start_time - 1分钟 > work_start）
             return {"is_available": True, "earliest_available": work_start}
 
-        # 找预约之间的空闲时段
+        # 找预约之间的空闲时段（需要至少1分钟间隙才算空闲）
         for i in range(len(bookings) - 1):
-            if bookings[i].end_time < bookings[i + 1].start_time:
-                return {"is_available": True, "earliest_available": bookings[i].end_time}
+            # 计算间隙：下一个预约开始时间 - 上一个预约结束时间
+            # 由于缓冲规则，end_time 和下一个 start_time 相邻时，新预约只能从 end_time+1 开始
+            # 但如果 end_time+1 >= 下一个 start_time，则没有空闲
+            gap_start = add_one_minute(bookings[i].end_time)
+            next_start = bookings[i + 1].start_time
+            if gap_start < next_start:
+                return {"is_available": True, "earliest_available": gap_start}
 
-        # 所有预约都是连续的，返回最后一个预约的结束时间
-        last_end = bookings[-1].end_time
-        if last_end < work_end:
-            return {"is_available": True, "earliest_available": last_end}
+        # 所有预约都是连续的，返回最后一个预约结束时间+1分钟
+        last_end_plus = add_one_minute(bookings[-1].end_time)
+        if last_end_plus < work_end:
+            return {"is_available": True, "earliest_available": last_end_plus}
         else:
             return {"is_available": False, "earliest_available": "已约满"}
 
@@ -189,10 +212,12 @@ def get_room_current_status(db: Session, room_id: int, target_date: str = None,
         return {"is_available": False, "earliest_available": "已下班"}
 
     # 检查当前是否被占用，并找到最早空闲时间
-    # 构建时间线：标记哪些时间被占用
-    occupied_ranges = [(b.start_time, b.end_time) for b in bookings]
+    # 构建时间线：标记哪些时间被占用（包含缓冲时间）
+    # 每个预约实际占用的时间是 [start_time, end_time+1分钟)
+    occupied_ranges = [(b.start_time, add_one_minute(b.end_time))
+                       for b in bookings]
 
-    # 检查当前时间是否在某个预约中
+    # 检查当前时间是否在某个预约中（或缓冲时间内）
     for start, end in occupied_ranges:
         if start <= current_time < end:
             # 当前被占用

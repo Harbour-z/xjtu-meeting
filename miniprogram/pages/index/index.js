@@ -11,6 +11,7 @@ Page({
         currentDate: '',
         dateDisplay: '',
         weekDay: '',
+        dateList: [],  // 7天日期列表
         rooms: [],
         loading: true,
         refreshing: false,
@@ -109,14 +110,61 @@ Page({
         const maxDate = today.getTime() + 365 * 24 * 60 * 60 * 1000
         const defaultDate = today.getTime()
 
+        // 生成7天日期列表
+        const dateList = this.generateDateList()
+
         this.setData({
             currentDate: dateStr,
             currentCampusIndex: campusIndex >= 0 ? campusIndex : 0,
             dateDisplay: this.formatDateDisplay(today),
             weekDay: this.getWeekDay(today),
+            dateList: dateList,
             minDate: minDate,
             maxDate: maxDate,
             defaultDate: defaultDate
+        })
+
+        this.loadRooms()
+    },
+
+    // 生成未来7天的日期列表
+    generateDateList() {
+        const list = []
+        const today = new Date()
+        const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today)
+            date.setDate(today.getDate() + i)
+
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            const dateStr = `${year}-${month}-${day}`
+
+            list.push({
+                date: dateStr,
+                day: date.getDate(),
+                weekDay: weekDays[date.getDay()],
+                isToday: i === 0,
+                display: i === 0 ? '今天' : (i === 1 ? '明天' : weekDays[date.getDay()])
+            })
+        }
+
+        return list
+    },
+
+    // 点击日期项
+    onDateItemTap(e) {
+        const { date } = e.currentTarget.dataset
+        if (date === this.data.currentDate) return
+
+        const dateObj = new Date(date.replace(/-/g, '/'))
+
+        this.setData({
+            currentDate: date,
+            dateDisplay: this.formatDateDisplay(dateObj),
+            weekDay: this.getWeekDay(dateObj)
         })
 
         this.loadRooms()

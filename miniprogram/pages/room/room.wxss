@@ -4,6 +4,10 @@
   min-height: 100vh;
   background: #f5f7fa;
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  /* 禁止水平滚动 */
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .loading-state {
@@ -11,13 +15,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 200rpx 0;
+  padding: 200rpx 24rpx;
   color: #999;
   gap: 16rpx;
 }
 
 .content {
   padding: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 会议室信息卡片 */
@@ -27,17 +33,24 @@
   padding: 32rpx;
   color: white;
   margin-bottom: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .room-title {
   font-size: 36rpx;
   font-weight: 600;
   margin-bottom: 16rpx;
+  /* 文字溢出处理 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-meta {
   display: flex;
-  gap: 32rpx;
+  flex-wrap: wrap;
+  gap: 24rpx;
   margin-bottom: 12rpx;
 }
 
@@ -56,6 +69,8 @@
   font-size: 24rpx;
   opacity: 0.85;
   margin-top: 8rpx;
+  /* 允许换行 */
+  flex-wrap: wrap;
 }
 
 /* 日期头 */
@@ -64,6 +79,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16rpx;
+  width: 100%;
 }
 
 .date-title {
@@ -78,6 +94,7 @@
   gap: 8rpx;
   color: #1890ff;
   font-size: 26rpx;
+  flex-shrink: 0;
 }
 
 /* 时间线容器 */
@@ -86,6 +103,8 @@
   border-radius: 16rpx;
   padding: 24rpx;
   margin-bottom: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .timeline-label {
@@ -99,6 +118,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12rpx;
+  width: 100%;
 }
 
 .time-slot {
@@ -106,6 +126,9 @@
   padding: 16rpx 8rpx;
   text-align: center;
   transition: all 0.2s ease;
+  /* 防止内容溢出 */
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* 空闲状态 - 绿色 */
@@ -133,6 +156,33 @@
   background: #fff2f0;
   border: 2rpx solid #ffccc7;
   opacity: 0.8;
+}
+
+/* 已过去的时间段 - 灰色 */
+.time-slot-passed {
+  background: #f5f5f5 !important;
+  border: 2rpx solid #d9d9d9 !important;
+  opacity: 0.6;
+}
+
+.time-slot-passed .slot-time {
+  color: #999 !important;
+}
+
+.time-slot-passed .slot-booked-count {
+  color: #999 !important;
+}
+
+/* 选中状态 - 蓝色高亮 */
+.time-slot-selected {
+  border: 4rpx solid #1890ff !important;
+  box-shadow: 0 0 12rpx rgba(24, 144, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.time-slot-selected .slot-time {
+  color: #1890ff;
+  font-weight: 600;
 }
 
 .slot-time {
@@ -336,6 +386,11 @@
 .popup-status.status-fully_booked {
   background: #fff2f0;
   color: #ff4d4f;
+}
+
+.popup-status.status-passed {
+  background: #f5f5f5;
+  color: #999;
 }
 
 .popup-bookings {
