@@ -58,15 +58,18 @@ def delete_room(db: Session, room_id: int) -> bool:
 
 def get_bookings(db: Session, date_str: Optional[str] = None,
                  room_id: Optional[int] = None,
-                 teacher_name: Optional[str] = None) -> List[models.Booking]:
+                 teacher_name: Optional[str] = None,
+                 campus: Optional[str] = None) -> List[models.Booking]:
     """获取预约列表"""
-    query = db.query(models.Booking)
+    query = db.query(models.Booking).join(models.Room)
     if date_str:
         query = query.filter(models.Booking.date == date_str)
     if room_id:
         query = query.filter(models.Booking.room_id == room_id)
     if teacher_name:
         query = query.filter(models.Booking.teacher_name == teacher_name)
+    if campus:
+        query = query.filter(models.Room.campus == campus)
     return query.order_by(models.Booking.date, models.Booking.start_time).all()
 
 
@@ -167,8 +170,8 @@ def get_room_current_status(db: Session, room_id: int, target_date: str = None,
         current_time = datetime.now().strftime("%H:%M")
 
     # 工作时间范围
-    work_start = "07:00"
-    work_end = "23:00"
+    work_start = "08:00"
+    work_end = "22:00"
 
     # 获取该日期的所有预约
     bookings = get_room_bookings_for_date(db, room_id, target_date)

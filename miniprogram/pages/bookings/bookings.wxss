@@ -1,0 +1,268 @@
+/* pages/bookings/bookings.wxss */
+
+.page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* 日期滚动栏 */
+.date-section {
+  background: #ffffff;
+  padding: 20rpx 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.date-scroll {
+  width: 100%;
+  white-space: nowrap;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.date-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 96rpx;
+  width: 96rpx;
+  height: 100rpx;
+  margin: 0 8rpx;
+  padding: 12rpx 8rpx;
+  border-radius: 12rpx;
+  background: #f5f7fa;
+  transition: all 0.2s ease;
+  vertical-align: top;
+}
+
+.date-item.active {
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.3);
+}
+
+.date-item-day {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.date-item.active .date-item-day {
+  color: white;
+}
+
+.date-item-week {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.date-item.active .date-item-week {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.date-more {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+}
+
+/* 校区标签 */
+.campus-tabs {
+  display: flex;
+  background: #ffffff;
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.campus-tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  background: #f5f7fa;
+  color: #666;
+  font-size: 28rpx;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campus-tab.active {
+  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.3);
+}
+
+/* 统计信息 */
+.stats-bar {
+  background: #ffffff;
+  padding: 20rpx 32rpx;
+  font-size: 26rpx;
+  color: #666;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+/* 预约列表容器 */
+.bookings-container {
+  padding: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 24rpx;
+  color: #999;
+  font-size: 28rpx;
+  gap: 16rpx;
+}
+
+/* 校区分组 */
+.campus-group {
+  margin-bottom: 32rpx;
+}
+
+.campus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.campus-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.campus-count {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 会议室分组 */
+.room-group {
+  background: #ffffff;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.room-header {
+  padding: 24rpx 28rpx 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.room-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.room-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.room-location {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 预约卡片 */
+.booking-cards {
+  padding: 16rpx 28rpx 24rpx;
+}
+
+.booking-card {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: #f5f7fa;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.booking-card:last-child {
+  margin-bottom: 0;
+}
+
+.booking-time {
+  flex-shrink: 0;
+  min-width: 180rpx;
+}
+
+.booking-time text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.booking-info {
+  flex: 1;
+  margin-left: 20rpx;
+  overflow: hidden;
+}
+
+.booking-person {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.booking-subject {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 状态标签 */
+.booking-status {
+  flex-shrink: 0;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  margin-left: 16rpx;
+}
+
+.status-pending {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.status-ongoing {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.status-ended {
+  background: #f5f5f5;
+  color: #999;
+}

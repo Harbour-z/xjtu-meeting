@@ -1,6 +1,7 @@
 {
     "pages": [
         "pages/index/index",
+        "pages/bookings/bookings",
         "pages/room/room",
         "pages/booking/booking",
         "pages/mybookings/mybookings",
@@ -9,7 +10,7 @@
     "window": {
         "backgroundTextStyle": "light",
         "navigationBarBackgroundColor": "#1890ff",
-        "navigationBarTitleText": "会议室预约",
+        "navigationBarTitleText": "西安交大软件学院会议室预约系统",
         "navigationBarTextStyle": "white"
     },
     "tabBar": {
@@ -25,6 +26,12 @@
                 "text": "预约",
                 "iconPath": "images/home.png",
                 "selectedIconPath": "images/home-active.png"
+            },
+            {
+                "pagePath": "pages/bookings/bookings",
+                "text": "预约情况",
+                "iconPath": "images/calendar.png",
+                "selectedIconPath": "images/calendar-active.png"
             },
             {
                 "pagePath": "pages/mybookings/mybookings",

@@ -106,19 +106,32 @@ function getRoom(roomId) {
 
 /**
  * 获取会议室时间线
+ * @param {string} roomId - 会议室ID
+ * @param {string} date - 查询日期 YYYY-MM-DD
+ * @param {string} currentDate - 当前日期 YYYY-MM-DD（从客户端获取，避免服务器时间不准确）
+ * @param {string} currentTime - 当前时间 HH:MM（从客户端获取，避免服务器时间不准确）
  */
-function getRoomTimeline(roomId, date) {
-    return request(`/api/rooms/${roomId}/timeline?date=${date}`)
+function getRoomTimeline(roomId, date, currentDate, currentTime) {
+    const params = [`date=${date}`]
+    if (currentDate) params.push(`current_date=${currentDate}`)
+    if (currentTime) params.push(`current_time=${currentTime}`)
+    const query = params.length > 0 ? `?${params.join('&')}` : ''
+    return request(`/api/rooms/${roomId}/timeline${query}`)
 }
 
 /**
  * 获取预约列表
+ * @param {string} date - 日期 YYYY-MM-DD
+ * @param {number} roomId - 会议室ID
+ * @param {string} teacherName - 教师姓名
+ * @param {string} campus - 校区代码 (xingqing/chuangxin)
  */
-function getBookings(date, roomId, teacherName) {
+function getBookings(date, roomId, teacherName, campus) {
     const params = []
     if (date) params.push(`date=${date}`)
     if (roomId) params.push(`room_id=${roomId}`)
     if (teacherName) params.push(`teacher_name=${encodeURIComponent(teacherName)}`)
+    if (campus) params.push(`campus=${campus}`)
     const query = params.length > 0 ? `?${params.join('&')}` : ''
     return request(`/api/bookings${query}`)
 }
@@ -132,9 +145,16 @@ function createBooking(data) {
 
 /**
  * 取消预约
+ * @param {string} bookingId - 预约ID
+ * @param {string} currentDate - 当前日期 YYYY-MM-DD（从客户端获取，避免服务器时间不准确）
+ * @param {string} currentTime - 当前时间 HH:MM（从客户端获取，避免服务器时间不准确）
  */
-function deleteBooking(bookingId) {
-    return request(`/api/bookings/${bookingId}`, 'DELETE')
+function deleteBooking(bookingId, currentDate, currentTime) {
+    const params = []
+    if (currentDate) params.push(`current_date=${currentDate}`)
+    if (currentTime) params.push(`current_time=${currentTime}`)
+    const query = params.length > 0 ? `?${params.join('&')}` : ''
+    return request(`/api/bookings/${bookingId}${query}`, 'DELETE')
 }
 
 // ==================== 认证相关 ====================

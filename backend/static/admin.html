@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理后台 - 西安交大会议室预约系统</title>
+    <title>管理后台 - 西安交大软件学院会议室预约系统</title>
     <style>
         * {
             margin: 0;
@@ -808,10 +808,11 @@
 
 <body>
     <nav class="nav">
-        <div class="nav-title">🏛️ 西安交大会议室预约管理</div>
+        <div class="nav-title">🏛️ 西安交大软件学院会议室预约管理</div>
         <div class="nav-right">
             <div class="nav-tabs">
                 <button class="nav-tab active" data-page="booking-page">预约管理</button>
+                <button class="nav-tab" data-page="booking-overview-page">预约情况</button>
                 <button class="nav-tab" data-page="rooms-page">会议室管理</button>
                 <button class="nav-tab" data-page="teachers-page">教职工管理</button>
             </div>
@@ -834,6 +835,42 @@
                 </div>
             </div>
             <div id="rooms-grid" class="rooms-grid"></div>
+        </div>
+
+        <!-- 预约情况页面 -->
+        <div id="booking-overview-page" class="page">
+            <div class="date-bar">
+                <div class="date-display"><span id="overview-date-text">今天</span></div>
+                <div class="date-actions">
+                    <input type="date" class="time-input" id="overview-date-picker" style="width: auto;">
+                    <button class="btn btn-outline btn-sm" onclick="refreshBookingOverview()">🔄 刷新</button>
+                </div>
+            </div>
+            <div class="campus-tabs">
+                <div class="campus-tab active" data-campus="all">全部</div>
+                <div class="campus-tab" data-campus="xingqing">兴庆校区</div>
+                <div class="campus-tab" data-campus="chuangxin">创新港校区</div>
+            </div>
+            <div class="overview-stats"
+                style="padding: 16px 24px; background: white; margin-bottom: 16px; border-radius: 12px;">
+                共 <span id="overview-total">0</span> 条预约
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>会议室</th>
+                            <th>校区</th>
+                            <th>时间段</th>
+                            <th>预约人</th>
+                            <th>主题/用途</th>
+                            <th>联系电话</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="overview-tbody"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- 会议室管理页面 -->
@@ -909,11 +946,11 @@
                     <div class="time-picker-row">
                         <div class="time-picker-item">
                             <label class="time-label">开始时间</label>
-                            <input type="time" class="time-input" id="start-time" value="07:00" min="07:00" max="22:30">
+                            <input type="time" class="time-input" id="start-time" value="08:00" min="08:00" max="21:30">
                         </div>
                         <div class="time-picker-item">
                             <label class="time-label">结束时间</label>
-                            <input type="time" class="time-input" id="end-time" value="08:00" min="07:30" max="23:00">
+                            <input type="time" class="time-input" id="end-time" value="08:30" min="08:30" max="22:00">
                         </div>
                     </div>
                     <div id="time-conflict-warning" class="time-conflict-warning" style="display: none;"></div>
@@ -1042,6 +1079,7 @@
             loadRooms();
             loadAdminRooms();
             loadTeachers();
+            loadBookingOverview();
 
             // 导航标签切换
             document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -1169,25 +1207,40 @@
             validateTime();
         }
 
-        // 判断时间段是否已过去
+        // 判断时间段是否已过去（30分钟时段）
         function isSlotPassed(slotStartTime, today, currentTime, selectedDate) {
             // 如果不是今天，不会过去
             if (selectedDate !== today) return false;
-            // 时间段的结束时间是 XX:59，所以判断整点是否过去
-            const slotEndHour = parseInt(slotStartTime.split(':')[0]) + 1;
-            const slotEndTime = `${String(slotEndHour).padStart(2, '0')}:00`;
+            // 30分钟时段：结束时间 = 开始时间 + 30分钟
+            const parts = slotStartTime.split(':');
+            let hour = parseInt(parts[0]);
+            let minute = parseInt(parts[1]);
+            let slotEndMinute = minute + 30;
+            let slotEndHour = hour;
+            if (slotEndMinute >= 60) {
+                slotEndMinute = 0;
+                slotEndHour = hour + 1;
+            }
+            const slotEndTime = `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMinute).padStart(2, '0')}`;
             return currentTime >= slotEndTime;
         }
 
-        // 判断时间段是否正在进行中
+        // 判断时间段是否正在进行中（30分钟时段）
         function isSlotCurrent(slotStartTime, today, currentTime, selectedDate) {
             // 如果不是今天，不在进行中
             if (selectedDate !== today) return false;
-            // 判断当前时间是否在该时间段内
-            const slotHour = parseInt(slotStartTime.split(':')[0]);
-            const slotStart = `${String(slotHour).padStart(2, '0')}:00`;
-            const slotEnd = `${String(slotHour + 1).padStart(2, '0')}:00`;
-            return currentTime >= slotStart && currentTime < slotEnd;
+            // 30分钟时段：结束时间 = 开始时间 + 30分钟
+            const parts = slotStartTime.split(':');
+            let hour = parseInt(parts[0]);
+            let minute = parseInt(parts[1]);
+            let slotEndMinute = minute + 30;
+            let slotEndHour = hour;
+            if (slotEndMinute >= 60) {
+                slotEndMinute = 0;
+                slotEndHour = hour + 1;
+            }
+            const slotEnd = `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMinute).padStart(2, '0')}`;
+            return currentTime >= slotStartTime && currentTime < slotEnd;
         }
 
         // 获取当前时间的下一分钟
@@ -1247,11 +1300,15 @@
                 if (isCurrent && slot.status === 'available') {
                     startTime = getNextMinute();
                 } else {
-                    startTime = slot.earliest_available || slot.start_time;
+                    // 使用最早可预约时间
+                    // 注意：earliest_available 是上一个预约的结束时间，需要加1分钟缓冲
+                    const earliest = slot.earliest_available || slot.start_time;
+                    startTime = addOneMinute(earliest);
                 }
 
                 // 计算结束时间
-                let endTime = slot.end_time;
+                // 默认使用时间段的结束时间（需要转换为实际时间）
+                let endTime = slotDisplayEndToActual(slot.end_time);
                 if (slot.status === 'partially_booked' && slot.bookings && slot.bookings.length > 0) {
                     // 找到第一个在 startTime 之后的预约，用它的开始时间作为结束时间
                     const sortedBookings = [...slot.bookings].sort((a, b) => a.start_time.localeCompare(b.start_time));
@@ -1281,11 +1338,24 @@
                 hour += 1;
             }
 
-            // 不超过 23:00
-            if (hour > 23 || (hour === 23 && minute > 0)) {
-                return '23:00';
+            // 不超过 22:00
+            if (hour > 22 || (hour === 22 && minute > 0)) {
+                return '22:00';
             }
 
+            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+
+        // 显示结束时间转实际结束时间（XX:29→XX:30, XX:59→(XX+1):00）
+        function slotDisplayEndToActual(displayEnd) {
+            const parts = displayEnd.split(':');
+            let hour = parseInt(parts[0]);
+            let minute = parseInt(parts[1]);
+            minute += 1;
+            if (minute >= 60) {
+                minute = 0;
+                hour += 1;
+            }
             return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
         }
 
@@ -1368,6 +1438,124 @@
                     showToast(err.detail || '预约失败', 'error');
                 }
             } catch (err) { showToast('网络错误', 'error'); }
+        }
+
+        // ==================== 预约情况 ====================
+
+        let overviewCampus = 'all';
+        let overviewDate = formatDate(new Date());
+
+        async function loadBookingOverview() {
+            try {
+                let url = `${API_BASE}/api/bookings?date=${overviewDate}`;
+                if (overviewCampus !== 'all') {
+                    url += `&campus=${overviewCampus}`;
+                }
+
+                const res = await fetch(url);
+                if (!res.ok) {
+                    showToast('加载失败', 'error');
+                    return;
+                }
+
+                const bookings = await res.json();
+                document.getElementById('overview-total').textContent = bookings.length;
+                renderOverviewTable(bookings);
+            } catch (err) {
+                console.error('加载预约情况失败:', err);
+                showToast('加载失败', 'error');
+            }
+        }
+
+        function renderOverviewTable(bookings) {
+            const tbody = document.getElementById('overview-tbody');
+
+            if (bookings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-light);">暂无预约记录</td></tr>';
+                return;
+            }
+
+            const now = new Date();
+            const today = formatDate(now);
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            tbody.innerHTML = bookings.map(booking => {
+                // 计算状态
+                let status, statusClass;
+                if (booking.date > today) {
+                    status = '待进行';
+                    statusClass = 'status-bound';
+                } else if (booking.date < today) {
+                    status = '已结束';
+                    statusClass = 'status-unbound';
+                } else if (booking.start_time > currentTime) {
+                    status = '待进行';
+                    statusClass = 'status-bound';
+                } else if (booking.end_time <= currentTime) {
+                    status = '已结束';
+                    statusClass = 'status-unbound';
+                } else {
+                    status = '进行中';
+                    statusClass = 'status-bound';
+                }
+
+                const campusName = booking.campus === 'xingqing' ? '兴庆校区' : '创新港校区';
+                const subjectOrPurpose = booking.subject || booking.purpose || '-';
+
+                return `
+                    <tr>
+                        <td>${escapeHtml(booking.room_name)}</td>
+                        <td><span class="campus-tag campus-${booking.campus}">${campusName}</span></td>
+                        <td>${booking.start_time} - ${booking.end_time}</td>
+                        <td>${escapeHtml(booking.teacher_name)}</td>
+                        <td>${escapeHtml(subjectOrPurpose)}</td>
+                        <td>${escapeHtml(booking.phone || '-')}</td>
+                        <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function refreshBookingOverview() {
+            loadBookingOverview();
+            showToast('已刷新', 'success');
+        }
+
+        // 初始化预约情况页面的日期选择器和校区选择
+        document.addEventListener('DOMContentLoaded', () => {
+            // 预约情况页面日期选择
+            const overviewDatePicker = document.getElementById('overview-date-picker');
+            if (overviewDatePicker) {
+                const today = new Date();
+                overviewDatePicker.value = formatDate(today);
+                overviewDatePicker.min = formatDate(today);  // 最小日期为今天，不允许选择过去的日期
+                overviewDatePicker.max = formatDate(new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000));
+
+                overviewDatePicker.addEventListener('change', (e) => {
+                    overviewDate = e.target.value;
+                    updateOverviewDateDisplay();
+                    loadBookingOverview();
+                });
+            }
+
+            // 预约情况页面校区选择
+            document.querySelectorAll('#booking-overview-page .campus-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('#booking-overview-page .campus-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    overviewCampus = tab.dataset.campus;
+                    loadBookingOverview();
+                });
+            });
+        });
+
+        function updateOverviewDateDisplay() {
+            const today = formatDate(new Date());
+            const tomorrow = formatDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+            const dateText = document.getElementById('overview-date-text');
+            if (overviewDate === today) { dateText.textContent = '今天'; }
+            else if (overviewDate === tomorrow) { dateText.textContent = '明天'; }
+            else { const d = new Date(overviewDate); const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']; dateText.textContent = `${d.getMonth() + 1}月${d.getDate()}日 ${days[d.getDay()]}`; }
         }
 
         // ==================== 会议室管理 ====================

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import os
 
 from database import get_db, init_db, engine
@@ -15,8 +15,8 @@ import crud
 
 # 创建应用
 app = FastAPI(
-    title="西安交大会议室预约系统",
-    description="会议室预约管理 API",
+    title="西安交大软件学院会议室预约系统",
+    description="西安交通大学软件学院会议室预约管理 API",
     version="1.0.0"
 )
 
@@ -53,18 +53,10 @@ def startup():
 def init_sample_data(db):
     """初始化示例数据"""
     sample_rooms = [
-        {"name": "第一会议室", "campus": "xingqing", "capacity": 30,
-            "location": "主楼201", "equipment": "投影仪,白板,空调"},
-        {"name": "第二会议室", "campus": "xingqing", "capacity": 20,
-            "location": "主楼203", "equipment": "投影仪,空调"},
-        {"name": "学术报告厅", "campus": "xingqing", "capacity": 100,
-            "location": "图书馆一楼", "equipment": "投影仪,音响,空调"},
-        {"name": "研讨室A", "campus": "chuangxin", "capacity": 15,
-            "location": "创新港1号楼301", "equipment": "投影仪,白板"},
-        {"name": "研讨室B", "campus": "chuangxin", "capacity": 15,
-            "location": "创新港1号楼302", "equipment": "投影仪,白板"},
-        {"name": "多功能厅", "campus": "chuangxin", "capacity": 80,
-            "location": "创新港中心楼", "equipment": "投影仪,音响,空调,视频会议"},
+        {"name": "软件学院西小楼 114", "campus": "xingqing", "capacity": 20,
+            "location": "软件学院西小楼114", "equipment": "投影仪,白板,空调"},
+        {"name": "4-5179 会议室", "campus": "chuangxin", "capacity": 30,
+            "location": "创新港4号楼5179", "equipment": "投影仪,白板,空调,视频会议"},
     ]
     for room_data in sample_rooms:
         room = schemas.RoomCreate(**room_data)
@@ -131,92 +123,120 @@ def get_room_timeline(
     date_str: str = Query(..., alias="date", description="日期 YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
-    """获取某会议室某天的时间线（每小时一块）"""
+    """获取某会议室某天的时间线（每30分钟一块）"""
     room = crud.get_room(db, room_id)
     if not room:
         raise HTTPException(status_code=404, detail="会议室不存在")
 
     bookings = crud.get_room_bookings_for_date(db, room_id, date_str)
 
-    # 生成时间线（07:00 - 23:00，每小时一个时段）
+    # 辅助函数：时间字符串加1分钟
+    def add_one_minute(time_str):
+        parts = time_str.split(':')
+        h = int(parts[0])
+        m = int(parts[1]) + 1
+        if m >= 60:
+            m = 0
+            h += 1
+        return f"{h:02d}:{m:02d}"
+
+    # 辅助函数：计算两个时间字符串之间的分钟差
+    def time_to_minutes(time_str):
+        parts = time_str.split(':')
+        return int(parts[0]) * 60 + int(parts[1])
+
+    # 生成时间线（08:00 - 22:00，每30分钟一个时段）
     slots = []
-    for hour in range(7, 23):
-        start = f"{hour:02d}:00"
-        end = f"{hour:02d}:59"
-
-        # 查找该小时内的所有预约
-        hour_bookings = []
-        for booking in bookings:
-            # 预约是否与该小时有交集
-            if booking.start_time < f"{hour+1:02d}:00" and booking.end_time > start:
-                hour_bookings.append(booking)
-
-        # 计算该时间段的占用情况
-        if not hour_bookings:
-            # 完全空闲
-            status = "available"
-            earliest_available = start
-        else:
-            # 检查是否完全被占用：预约从小时开始（或更早）到小时结束（或更晚）
-            # 时间槽的实际结束时间是下一小时的开始 (hour+1):00
-            slot_actual_end = f"{hour+1:02d}:00"
-
-            # 判断是否有预约完全覆盖该时间槽
-            is_fully_covered = False
-            for b in hour_bookings:
-                # 预约开始时间 <= 时间槽开始时间，且预约结束时间 >= 时间槽实际结束时间
-                if b.start_time <= start and b.end_time >= slot_actual_end:
-                    is_fully_covered = True
-                    break
-
-            if is_fully_covered:
-                # 完全被占用
-                status = "fully_booked"
-                earliest_available = None
+    for hour in range(8, 22):
+        for minute in [0, 30]:
+            start = f"{hour:02d}:{minute:02d}"
+            if minute == 0:
+                end = f"{hour:02d}:29"
+                slot_actual_end = f"{hour:02d}:30"
             else:
-                # 计算被占用的分钟数（用于判断是否部分占用）
-                occupied_minutes = 0
-                for b in hour_bookings:
-                    # 计算该预约在这个小时内的占用时间
-                    b_start = max(b.start_time, start)
-                    b_end = min(b.end_time, slot_actual_end)
-                    # 计算分钟数
-                    start_minutes = int(b_start.split(
-                        ":")[0]) * 60 + int(b_start.split(":")[1])
-                    end_minutes = int(b_end.split(
-                        ":")[0]) * 60 + int(b_end.split(":")[1])
-                    occupied_minutes += (end_minutes - start_minutes)
+                end = f"{hour:02d}:59"
+                slot_actual_end = f"{hour+1:02d}:00"
 
-                # 如果占用时间接近整个小时（>= 59分钟），也视为完全占用
-                if occupied_minutes >= 59:
+            # 查找该时段内的所有预约
+            slot_bookings = []
+            for booking in bookings:
+                # 预约是否与该时段有交集
+                if booking.start_time < slot_actual_end and booking.end_time > start:
+                    slot_bookings.append(booking)
+
+            # 计算该时间段的占用情况
+            if not slot_bookings:
+                # 完全空闲
+                status = "available"
+                earliest_available = start
+            else:
+                # 计算每个预约在该时段内的实际占用区间（含缓冲时间）
+                # 每个预约实际占用 [start_time, end_time+1分钟)
+                sorted_bookings = sorted(
+                    slot_bookings, key=lambda x: x.start_time)
+
+                # 合并重叠或相邻的占用区间
+                merged_ranges = []
+                for b in sorted_bookings:
+                    range_start = max(b.start_time, start)
+                    range_end = min(add_one_minute(
+                        b.end_time), slot_actual_end)
+
+                    if not merged_ranges:
+                        merged_ranges.append([range_start, range_end])
+                    else:
+                        last_start, last_end = merged_ranges[-1]
+                        if range_start <= last_end:
+                            merged_ranges[-1][1] = max(last_end, range_end)
+                        else:
+                            merged_ranges.append([range_start, range_end])
+
+                # 计算空闲区间
+                free_ranges = []
+                current_pos = start
+                for range_start, range_end in merged_ranges:
+                    if current_pos < range_start:
+                        free_ranges.append([current_pos, range_start])
+                    current_pos = max(current_pos, range_end)
+                if current_pos < slot_actual_end:
+                    free_ranges.append([current_pos, slot_actual_end])
+
+                # 检查是否存在连续5分钟或以上的空闲时间
+                has_5min_free = False
+                for free_start, free_end in free_ranges:
+                    free_minutes = time_to_minutes(
+                        free_end) - time_to_minutes(free_start)
+                    if free_minutes >= 5:
+                        has_5min_free = True
+                        break
+
+                if has_5min_free:
+                    status = "partially_booked"
+                    earliest = start
+                    for range_start, range_end in merged_ranges:
+                        if range_start <= earliest < range_end:
+                            earliest = range_end
+                    earliest_available = earliest
+                else:
                     status = "fully_booked"
                     earliest_available = None
-                else:
-                    # 部分被占用
-                    status = "partially_booked"
-                    # 找最早空闲时间
-                    earliest = start
-                    for b in sorted(hour_bookings, key=lambda x: x.start_time):
-                        if b.start_time <= earliest < b.end_time:
-                            earliest = b.end_time
-                    earliest_available = earliest
 
-        slots.append({
-            "start_time": start,
-            "end_time": end,
-            "status": status,
-            "earliest_available": earliest_available,
-            "bookings": [
-                {
-                    "id": b.id,
-                    "start_time": b.start_time,
-                    "end_time": b.end_time,
-                    "teacher_name": b.teacher_name,
-                    "purpose": b.purpose,
-                    "phone": b.phone
-                } for b in sorted(hour_bookings, key=lambda x: x.start_time)
-            ]
-        })
+            slots.append({
+                "start_time": start,
+                "end_time": end,
+                "status": status,
+                "earliest_available": earliest_available,
+                "bookings": [
+                    {
+                        "id": b.id,
+                        "start_time": b.start_time,
+                        "end_time": b.end_time,
+                        "teacher_name": b.teacher_name,
+                        "purpose": b.purpose,
+                        "phone": b.phone
+                    } for b in sorted(slot_bookings, key=lambda x: x.start_time)
+                ]
+            })
 
     return {
         "room_id": room_id,
@@ -233,10 +253,12 @@ def get_bookings(
     date_str: Optional[str] = Query(None, alias="date", description="日期"),
     room_id: Optional[int] = Query(None, description="会议室ID"),
     teacher_name: Optional[str] = Query(None, description="老师姓名"),
+    campus: Optional[str] = Query(
+        None, description="校区代码 (xingqing/chuangxin)"),
     db: Session = Depends(get_db)
 ):
     """获取预约列表"""
-    bookings = crud.get_bookings(db, date_str, room_id, teacher_name)
+    bookings = crud.get_bookings(db, date_str, room_id, teacher_name, campus)
     result = []
     for booking in bookings:
         result.append(schemas.BookingWithRoom(
@@ -258,8 +280,15 @@ def get_bookings(
 
 
 @app.post("/api/bookings", response_model=schemas.BookingResponse)
-def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)):
-    """创建预约"""
+def create_booking(
+    booking: schemas.BookingCreate,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """创建预约（需要用户认证）"""
+    # 验证用户身份
+    current_user = get_current_user(request, db)
+
     # 检查会议室是否存在
     room = crud.get_room(db, booking.room_id)
     if not room:
@@ -272,6 +301,16 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
     # 检查日期是否有效（不能预约过去的日期）
     if booking.date < today:
         raise HTTPException(status_code=400, detail="不能预约过去的日期")
+
+    # 检查日期上限（最多提前60天）
+    try:
+        today_date = datetime.strptime(today, "%Y-%m-%d").date()
+        max_date = today_date + timedelta(days=60)
+        booking_date = datetime.strptime(booking.date, "%Y-%m-%d").date()
+        if booking_date > max_date:
+            raise HTTPException(status_code=400, detail="预约日期不能超过60天")
+    except ValueError:
+        pass  # 日期格式错误会被其他验证捕获
 
     # 如果是今天，检查时间是否已过
     if booking.date == today:
@@ -288,8 +327,8 @@ def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=400, detail="结束时间必须晚于开始时间")
 
     # 检查工作时间
-    if booking.start_time < "07:00" or booking.end_time > "23:00":
-        raise HTTPException(status_code=400, detail="预约时间应在 07:00-23:00 之间")
+    if booking.start_time < "08:00" or booking.end_time > "22:00":
+        raise HTTPException(status_code=400, detail="预约时间应在 08:00-22:00 之间")
 
     return crud.create_booking(db, booking)
 
@@ -427,6 +466,40 @@ def debug_db_status(db: Session = Depends(get_db)):
 WX_APPID = "wx6d73efcdaee8bf3d"
 
 
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    """
+    获取当前已认证用户（依赖函数）
+    从请求头获取 openid，验证是否已绑定
+    返回用户绑定信息，未绑定则抛出 401 错误
+    """
+    # 云托管环境会在请求头中自动注入 X-WX-OPENID
+    openid = request.headers.get("X-WX-OPENID")
+
+    # 开发环境：如果没有 openid，使用请求体中的 openid（兼容开发调试）
+    if not openid:
+        # 尝试从查询参数获取（开发环境）
+        openid = request.query_params.get("openid")
+
+    # 开发环境的模拟 openid
+    if not openid:
+        openid = "dev_openid_" + str(hash(request.client.host) % 10000)
+
+    # 验证绑定状态
+    bind = crud.get_user_bind(db, openid)
+    if not bind:
+        raise HTTPException(
+            status_code=401,
+            detail="用户未认证或绑定已失效，请重新登录"
+        )
+
+    return {
+        "openid": openid,
+        "teacher_id": bind.teacher_id,
+        "teacher_name": bind.teacher.name,
+        "employee_id": bind.teacher.employee_id
+    }
+
+
 @app.get("/api/auth/getOpenid")
 def get_openid(request: Request):
     """从云托管请求头获取用户 openid"""
@@ -555,7 +628,7 @@ def index_page():
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>西安交大会议室预约系统</title>
+        <title>西安交大软件学院会议室预约系统</title>
         <style>
             body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f7fa; }
             .container { text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
@@ -568,8 +641,8 @@ def index_page():
     </head>
     <body>
         <div class="container">
-            <h1>🏛️ 西安交大会议室预约系统</h1>
-            <p>西安交通大学会议室预约管理平台</p>
+            <h1>🏛️ 西安交大软件学院会议室预约系统</h1>
+            <p>西安交通大学软件学院会议室预约管理平台</p>
             <div class="links">
                 <a href="/admin">📋 进入管理后台</a>
                 <a href="/docs" class="api-link">📖 API 文档</a>

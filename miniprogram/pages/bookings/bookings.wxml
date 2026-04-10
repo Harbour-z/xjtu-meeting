@@ -1,0 +1,115 @@
+<!-- pages/bookings/bookings.wxml - 预约情况页面 -->
+<view class="page">
+  <!-- 日期滚动栏 -->
+  <view class="date-section">
+    <scroll-view class="date-scroll" scroll-x enable-flex>
+      <view
+        class="date-item {{item.date === currentDate ? 'active' : ''}}"
+        wx:for="{{dateList}}"
+        wx:key="date"
+        data-date="{{item.date}}"
+        bindtap="onDateItemTap"
+      >
+        <text class="date-item-day">{{item.day}}</text>
+        <text class="date-item-week">{{item.display}}</text>
+      </view>
+      <view class="date-item date-more" bindtap="showDatePicker">
+        <van-icon name="calendar-o" size="20px" color="#1890ff" />
+        <text class="date-item-week">更多</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 校区切换 -->
+  <view class="campus-tabs">
+    <view
+      class="campus-tab {{currentCampusIndex === index ? 'active' : ''}}"
+      wx:for="{{campusList}}"
+      wx:key="code"
+      data-index="{{index}}"
+      bindtap="onCampusChange"
+    >
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 日历弹窗 -->
+  <van-calendar
+    show="{{showCalendar}}"
+    type="single"
+    min-date="{{minDate}}"
+    max-date="{{maxDate}}"
+    default-date="{{defaultDate}}"
+    poppable="{{true}}"
+    show-confirm="{{true}}"
+    confirm-text="确定"
+    confirm-disabled-text="请选择日期"
+    title="选择日期"
+    show-title="{{true}}"
+    bind:close="onCalendarClose"
+    bind:confirm="onCalendarConfirm"
+    color="#1890ff"
+  />
+
+  <!-- 统计信息 -->
+  <view class="stats-bar" wx:if="{{!loading && bookings.length > 0}}">
+    <text>共 {{bookings.length}} 条预约</text>
+  </view>
+
+  <!-- 预约列表 -->
+  <view class="bookings-container">
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading-state">
+      <van-loading size="24px" color="#1890ff" />
+      <text>加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{bookings.length === 0}}" class="empty-state">
+      <van-empty description="暂无预约记录" />
+    </view>
+
+    <!-- 按校区分组显示 -->
+    <view wx:else class="bookings-list">
+      <view class="campus-group" wx:for="{{groupedBookings}}" wx:key="campusName">
+        <!-- 校区标题 -->
+        <view class="campus-header">
+          <text class="campus-name">{{item.campusName}}</text>
+          <text class="campus-count">{{item.rooms.length}} 个会议室</text>
+        </view>
+
+        <!-- 会议室分组 -->
+        <view class="room-group" wx:for="{{item.rooms}}" wx:for-item="room" wx:key="room_name">
+          <view class="room-header">
+            <view class="room-name-row">
+              <van-icon name="location-o" size="14px" color="#1890ff" />
+              <text class="room-name">{{room.room_name}}</text>
+            </view>
+            <text class="room-location">{{room.room_location || ''}}</text>
+          </view>
+
+          <!-- 预约卡片列表 -->
+          <view class="booking-cards">
+            <view class="booking-card" wx:for="{{room.bookings}}" wx:for-item="booking" wx:key="id">
+              <view class="booking-time">
+                <text>{{booking.start_time}} - {{booking.end_time}}</text>
+              </view>
+              <view class="booking-info">
+                <view class="booking-person">
+                  <van-icon name="user-o" size="12px" color="#666" />
+                  <text>{{booking.teacher_name}}</text>
+                </view>
+                <view class="booking-subject" wx:if="{{booking.subject}}">
+                  <text>{{booking.subject}}</text>
+                </view>
+              </view>
+              <view class="booking-status {{booking.status === 'pending' ? 'status-pending' : booking.status === 'ongoing' ? 'status-ongoing' : 'status-ended'}}">
+                <text>{{booking.status === 'pending' ? '待进行' : booking.status === 'ongoing' ? '进行中' : '已结束'}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

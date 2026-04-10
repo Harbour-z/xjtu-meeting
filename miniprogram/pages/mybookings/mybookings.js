@@ -16,9 +16,45 @@ Page({
         this.updateCurrentTime()
     },
 
-    onShow() {
+    async onShow() {
         this.updateCurrentTime()
-        this.loadBookings()
+        // 每次显示时验证绑定状态
+        await this.verifyAuthAndLoad()
+    },
+
+    // 验证绑定状态并加载数据
+    async verifyAuthAndLoad() {
+        try {
+            const openid = await app.getOpenid()
+            const result = await api.getAuthStatus(openid)
+
+            if (result.is_bound) {
+                // 已绑定，更新用户信息
+                app.globalData.userInfo = {
+                    openid: openid,
+                    name: result.teacher_name,
+                    employeeId: result.employee_id,
+                    isBound: true
+                }
+                wx.setStorageSync('userInfo', app.globalData.userInfo)
+                this.setData({ userInfo: app.globalData.userInfo })
+                this.loadBookings()
+            } else {
+                // 未绑定，清除本地缓存并跳转到绑定页面
+                app.globalData.userInfo = null
+                wx.removeStorageSync('userInfo')
+                this.setData({ userInfo: null, bookings: [] })
+                wx.switchTab({ url: '/pages/index/index' })
+            }
+        } catch (err) {
+            console.error('验证绑定状态失败:', err)
+            // 网络错误时，使用本地缓存（降级处理）
+            const savedUserInfo = wx.getStorageSync('userInfo')
+            if (savedUserInfo && savedUserInfo.isBound) {
+                this.setData({ userInfo: savedUserInfo })
+                this.loadBookings()
+            }
+        }
     },
 
     // 更新当前日期和时间
@@ -90,8 +126,13 @@ Page({
 
         if (!res.confirm) return
 
+        // 获取客户端当前时间（避免服务器时间不准确）
+        const now = new Date()
+        const currentDate = this.formatDate(now)
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
         try {
-            await api.deleteBooking(id)
+            await api.deleteBooking(id, currentDate, currentTime)
             wx.showToast({ title: '已取消', icon: 'success' })
             this.loadBookings()
         } catch (err) {

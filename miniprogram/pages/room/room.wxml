@@ -7,14 +7,21 @@ module.exports = {
     // 时间段与选中范围有交集
     return slotStart < selectedEnd && slotEnd > selectedStart
   },
-  // 判断时间段是否已过去
+  // 判断时间段是否已过去（30分钟时段）
   isSlotPassed: function(slotStartTime, currentDate, currentTime, selectedDate) {
     // 如果不是选中的日期，不会过去
     if (selectedDate !== currentDate) return false
-    // 时间段的结束时间是 XX:59，所以判断整点是否过去
-    var hour = parseInt(slotStartTime.split(':')[0])
-    var slotEndHour = hour + 1
-    var slotEndTime = (slotEndHour < 10 ? '0' + slotEndHour : '' + slotEndHour) + ':00'
+    // 30分钟时段：结束时间 = 开始时间 + 30分钟
+    var parts = slotStartTime.split(':')
+    var hour = parseInt(parts[0])
+    var minute = parseInt(parts[1])
+    var slotEndMinute = minute + 30
+    var slotEndHour = hour
+    if (slotEndMinute >= 60) {
+      slotEndMinute = 0
+      slotEndHour = hour + 1
+    }
+    var slotEndTime = (slotEndHour < 10 ? '0' + slotEndHour : '' + slotEndHour) + ':' + (slotEndMinute < 10 ? '0' + slotEndMinute : '' + slotEndMinute)
     return currentTime >= slotEndTime
   }
 }
@@ -109,7 +116,7 @@ module.exports = {
           </picker>
         </view>
       </view>
-      <view class="time-tips">工作时间：07:00 - 23:00</view>
+      <view class="time-tips">工作时间：08:00 - 22:00</view>
       
       <!-- 时间冲突提示 -->
       <view wx:if="{{timeConflict}}" class="time-conflict-warning">

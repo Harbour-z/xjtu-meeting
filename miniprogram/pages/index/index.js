@@ -31,15 +31,61 @@ Page({
     },
 
     async onShow() {
-        // 每次显示页面时检查绑定状态
+        // 每次显示页面时都向服务器验证绑定状态（安全关键！）
+        await this.verifyAuthStatus()
+    },
+
+    // 向服务器验证绑定状态（安全关键）
+    async verifyAuthStatus() {
         const app = getApp()
-        if (app.globalData.userInfo && app.globalData.userInfo.isBound) {
-            this.setData({
-                userName: app.globalData.userInfo.name,
-                isBound: true
-            })
-            // 刷新数据
-            this.loadRooms()
+        try {
+            const openid = await app.getOpenid()
+            const result = await api.getAuthStatus(openid)
+
+            if (result.is_bound) {
+                // 已绑定，更新用户信息
+                app.globalData.userInfo = {
+                    openid: openid,
+                    name: result.teacher_name,
+                    employeeId: result.employee_id,
+                    isBound: true
+                }
+                wx.setStorageSync('userInfo', app.globalData.userInfo)
+                this.setData({
+                    userName: result.teacher_name,
+                    isBound: true
+                })
+                // 刷新数据
+                this.loadRooms()
+            } else {
+                // 未绑定，清除本地缓存并跳转到绑定页面
+                app.globalData.userInfo = null
+                wx.removeStorageSync('userInfo')
+                this.setData({
+                    userName: '',
+                    isBound: false
+                })
+                wx.redirectTo({
+                    url: `/pages/bind/bind?openid=${openid}`
+                })
+            }
+        } catch (err) {
+            console.error('验证绑定状态失败:', err)
+            // 网络错误时，使用本地缓存的用户信息（降级处理）
+            const savedUserInfo = wx.getStorageSync('userInfo')
+            if (savedUserInfo && savedUserInfo.isBound) {
+                this.setData({
+                    userName: savedUserInfo.name,
+                    isBound: true
+                })
+                this.loadRooms()
+            } else {
+                // 无本地缓存，提示用户
+                wx.showToast({
+                    title: '网络错误，请重试',
+                    icon: 'none'
+                })
+            }
         }
     },
 
@@ -105,9 +151,9 @@ Page({
             c => c.code === app.globalData.currentCampus
         )
 
-        // 计算日历的日期范围（只能选择今天及以后的日期，最多提前1年）
+        // 计算日历的日期范围（只能选择今天及以后的日期，最多提前60天）
         const minDate = today.getTime()  // 最小日期为今天，不允许选择过去的日期
-        const maxDate = today.getTime() + 365 * 24 * 60 * 60 * 1000
+        const maxDate = today.getTime() + 60 * 24 * 60 * 60 * 1000  // 最多提前60天（约2个月）
         const defaultDate = today.getTime()
 
         // 生成7天日期列表
